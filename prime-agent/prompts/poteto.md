@@ -1,0 +1,1 @@
+Load and apply the `poteto-mode` skill to this request (`/skill:poteto-mode` is the explicit form): $1

@@ -1,0 +1,14 @@
+{
+  "name": "pstack-prime-agent",
+  "version": "0.15.9",
+  "description": "pstack (poteto's Cursor plugin) ported to prime-agent: skills, prompts, and agent specs.",
+  "license": "MIT",
+  "pi": {
+    "skills": [
+      "skills/"
+    ],
+    "prompts": [
+      "prompts/"
+    ]
+  }
+}
