@@ -1,0 +1,1 @@
+Load the `poteto-help` skill (`/skill:poteto-help` is the explicit form) and answer with it: $1

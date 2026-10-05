@@ -13,6 +13,28 @@ Cursor plugin (MIT, by Lauren Tan / @poteto) — for two other agent harnesses.
   upstream checkout: `python3 port.py --src <path/to/pstack>`.
 
 See `ADAPTATIONS.md` for the Cursor → harness mapping table.
+`UPSTREAM` records the exact upstream commit the outputs were generated from.
+
+## Keeping in sync with upstream
+
+```sh
+python3 port.py --fetch        # download latest upstream, rebuild both ports
+python3 port.py --check        # report drift without writing (dry run)
+```
+
+The generated trees are rebuilt wholesale, so keep hand-edits out of
+`opencode/` and `prime-agent/`. To patch generated output durably, drop a
+file under `overrides/<target>/` mirroring the output path — it is copied
+verbatim over the result at the end of every build:
+
+```
+overrides/opencode/skills/how/SKILL.md      # replaces the generated file
+overrides/prime-agent/prompts/poteto.md     # same for prime-agent
+```
+
+`.github/workflows/pstack-sync.yml` runs `--fetch` weekly and opens a PR
+whenever the generated output changes, so upstream updates arrive as
+reviewable diffs.
 
 ## Install
 

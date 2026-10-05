@@ -1,22 +1,40 @@
 #!/usr/bin/env python3
 """Port pstack (Cursor plugin by poteto/Lauren Tan) to other agent harnesses.
 
-Reads the upstream tree at ../cursor-plugins/pstack (or --src) and emits:
+Reads the upstream pstack tree and emits:
 
   opencode/      skills + agents + commands installable into ~/.config/opencode/
   prime-agent/   a prime-agent package (skills + prompts + agent specs),
                  installable via ~/.prime/agent/ copies or a `packages` entry
+  extras/        upstream docs + automations, verbatim
+  UPSTREAM       stamp of the exact upstream commit the outputs were built from
 
-Usage: python3 port.py [--src DIR] [--dst DIR]
-Re-runnable; output dirs are regenerated wholesale.
+Usage:
+  python3 port.py --fetch            # download latest upstream pstack, rebuild
+  python3 port.py --fetch --ref vX   # pin to a ref/tag/sha
+  python3 port.py --src DIR          # build from a local checkout instead
+  python3 port.py --check            # regenerate to a temp dir and report drift
+
+Re-runnable; output dirs are regenerated wholesale. Files under
+overrides/<target>/ are copied over the generated output last, so local
+patches survive an upstream re-port (see README).
 """
 
 import argparse
+import hashlib
+import io
 import json
 import re
 import shutil
 import sys
+import subprocess
+import tarfile
+import tempfile
+import urllib.request
 from pathlib import Path
+
+UPSTREAM_REPO = "cursor/plugins"
+UPSTREAM_SUBDIR = "pstack"
 
 # ---------------------------------------------------------------------------
 # Per-harness constants
@@ -63,12 +81,16 @@ EXTERNAL_SKILLS = {"deslop", "control-cli", "control-ui", "create-skill", "babys
 
 ALL_SLASH = PSTACK_SKILLS | EXTERNAL_SKILLS | {"no-comments"}
 
+# Populated at build time from the source tree's skills/ dir so new upstream
+# skills are recognized even though the static PSTACK_SKILLS set predates them.
+ACTIVE_SKILLS: set = set()
+
 
 def slash_repl(target: str, name: str) -> str:
     if target == "prime-agent":
         return f"`/skill:{name}`"
-    # opencode: /poteto-mode and /setup-pstack are real shipped commands.
-    if name in {"poteto-mode", "setup-pstack"}:
+    # opencode: COMMAND_SKILLS ship as real /name commands.
+    if name in COMMAND_SKILLS:
         return f"`/{name}`"
     return f"the `{name}` skill"
 
@@ -327,10 +349,13 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
 
 # Slash-mention rewrite, applied after common rules so special sentences win.
 def rewrite_slashes(text: str, target: str) -> str:
-    names = "|".join(sorted(re.escape(n) for n in ALL_SLASH | PSTACK_SKILLS))
-    # Optional surrounding backticks are consumed so replacements never nest.
-    # Lookbehind blocks path segments (playbooks/babysit.md); optional
-    # surrounding backticks are consumed so replacements never nest.
+    # ACTIVE_SKILLS is the live skill-dir list from the source tree (falls back
+    # to the static PSTACK_SKILLS snapshot), so new upstream skills get
+    # /skill:-style rewrites without edits here.
+    skill_names = ACTIVE_SKILLS or PSTACK_SKILLS
+    names = "|".join(sorted(re.escape(n) for n in (ALL_SLASH - PSTACK_SKILLS) | skill_names))
+    # Optional surrounding backticks are consumed so replacements never nest;
+    # the lookbehind blocks path segments (e.g. playbooks/babysit.md).
     pat = re.compile(r"(?<![\w.:/-])`?/(" + names + r")\b`?(?![\w-])")
 
     def _sub(m: re.Match) -> str:
@@ -698,6 +723,10 @@ You are in poteto mode. At the start of every task, load the `poteto-mode` skill
 """,
 }
 
+# Skills that also ship as real invocation surfaces: commands for opencode,
+# prompts for prime-agent. (poteto-help is upstream's other word-loaded skill.)
+COMMAND_SKILLS = {"poteto-mode", "setup-pstack", "poteto-help"}
+
 OC_COMMANDS = {
     "poteto-mode.md": """---
 description: Apply poteto's playbook-routed engineering style to a task
@@ -709,11 +738,17 @@ description: Configure which models pstack uses per role
 ---
 Run the `setup-pstack` skill. $ARGUMENTS
 """,
+    "poteto-help.md": """---
+description: Ask which pstack skill/playbook/principle fits a task, or how to install and use pstack
+---
+Load the `poteto-help` skill and answer the user's question with it. $ARGUMENTS
+""",
 }
 
 PRIME_PROMPTS = {
     "poteto.md": """Load and apply the `poteto-mode` skill to this request (`/skill:poteto-mode` is the explicit form): $1""",
     "setup-pstack.md": """Run the `setup-pstack` skill: $1""",
+    "poteto-help.md": """Load the `poteto-help` skill (`/skill:poteto-help` is the explicit form) and answer with it: $1""",
 }
 
 PRIME_PACKAGE_JSON = {
@@ -800,6 +835,28 @@ Cursor plugin (MIT, by Lauren Tan / @poteto) — for two other agent harnesses.
   upstream checkout: `python3 port.py --src <path/to/pstack>`.
 
 See `ADAPTATIONS.md` for the Cursor → harness mapping table.
+`UPSTREAM` records the exact upstream commit the outputs were generated from.
+
+## Keeping in sync with upstream
+
+```sh
+python3 port.py --fetch        # download latest upstream, rebuild both ports
+python3 port.py --check        # report drift without writing (dry run)
+```
+
+The generated trees are rebuilt wholesale, so keep hand-edits out of
+`opencode/` and `prime-agent/`. To patch generated output durably, drop a
+file under `overrides/<target>/` mirroring the output path — it is copied
+verbatim over the result at the end of every build:
+
+```
+overrides/opencode/skills/how/SKILL.md      # replaces the generated file
+overrides/prime-agent/prompts/poteto.md     # same for prime-agent
+```
+
+`.github/workflows/pstack-sync.yml` runs `--fetch` weekly and opens a PR
+whenever the generated output changes, so upstream updates arrive as
+reviewable diffs.
 
 ## Install
 
@@ -893,17 +950,152 @@ port applies.
 """
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default="/home/ubuntu/cursor-plugins/pstack")
-    ap.add_argument("--dst", default="/home/ubuntu/pstack-ports")
-    args = ap.parse_args()
-    src, dst = Path(args.src), Path(args.dst)
+# ---------------------------------------------------------------------------
+# Upstream fetch / stamping / overrides / drift report
+# ---------------------------------------------------------------------------
+
+def resolve_ref(ref: str) -> str:
+    """Resolve a ref/branch/tag to a full commit sha via `git ls-remote`.
+
+    Avoids the api.github.com rate limit; a 40-hex ref is used as-is."""
+    if re.fullmatch(r"[0-9a-f]{40}", ref):
+        return ref
+    url = f"https://github.com/{UPSTREAM_REPO}.git"
+    out = subprocess.run(
+        ["git", "ls-remote", url, ref], capture_output=True, text=True, check=True
+    ).stdout
+    # Prefer heads/<ref>, then tags/<ref>, then any match.
+    candidates = []
+    for line in out.splitlines():
+        sha, _, name = line.partition("\t")
+        candidates.append((sha.strip(), name.strip()))
+    for kind in (f"refs/heads/{ref}", f"refs/tags/{ref}"):
+        for sha, name in candidates:
+            if name == kind:
+                return sha
+    if candidates:
+        return candidates[0][0]
+    sys.exit(f"could not resolve upstream ref {ref!r} via git ls-remote")
+
+
+def fetch_upstream(ref: str, cache: Path) -> tuple[Path, str]:
+    """Download the pstack subtree at `ref` into `cache`; return (src_dir, sha)."""
+    sha = resolve_ref(ref)
+    url = f"https://github.com/{UPSTREAM_REPO}/archive/{sha}.tar.gz"
+    print(f"fetching {UPSTREAM_REPO}@{sha[:12]} ...")
+    req = urllib.request.Request(url, headers={"User-Agent": "pstack-port"})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        blob = r.read()
+    shutil.rmtree(cache, ignore_errors=True)
+    cache.mkdir(parents=True)
+    root_prefix = f"plugins-{sha}/{UPSTREAM_SUBDIR}/"
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
+        members = [m for m in tf.getmembers()
+                   if m.name.startswith(root_prefix) and m.isfile()]
+        for m in members:
+            m.name = m.name[len(root_prefix):]
+            tf.extract(m, cache, filter="data")
+    return cache, sha
+
+
+def write_stamp(dst: Path, src_desc: str) -> None:
+    write(dst / "UPSTREAM", src_desc + "\n")
+
+
+def apply_overrides(dst_root: Path, target: str) -> int:
+    """Copy overrides/<target>/ files verbatim over the generated output."""
+    odir = dst_root / "overrides" / target
+    if not odir.is_dir():
+        return 0
+    n = 0
+    for f in sorted(odir.rglob("*")):
+        if f.is_file():
+            rel = f.relative_to(odir)
+            out = dst_root / target / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(f, out)
+            n += 1
+    return n
+
+
+def _hash_tree(root: Path) -> dict[str, str]:
+    out = {}
+    for f in sorted(root.rglob("*")):
+        if f.is_file():
+            out[str(f.relative_to(root))] = hashlib.sha256(f.read_bytes()).hexdigest()[:16]
+    return out
+
+
+def drift_report(new_root: Path, old_root: Path) -> str:
+    """Human-readable summary of what changed between generated trees."""
+    lines = []
+    for target in ("opencode", "prime-agent", "extras"):
+        new, old = _hash_tree(new_root / target), _hash_tree(old_root / target)
+        added = sorted(set(new) - set(old))
+        removed = sorted(set(old) - set(new))
+        changed = sorted(p for p in set(new) & set(old) if new[p] != old[p])
+        if not (added or removed or changed):
+            continue
+        lines.append(f"## {target}")
+        for label, group in (("added", added), ("removed", removed), ("changed", changed)):
+            if group:
+                lines.append(f"  {label} ({len(group)}):")
+                lines += [f"    {p}" for p in group]
+    return "\n".join(lines) or "no changes"
+
+
+def build_all(src: Path, dst: Path) -> None:
+    global ACTIVE_SKILLS
+    ACTIVE_SKILLS = {d.name for d in (src / "skills").iterdir() if d.is_dir()}
     build_opencode(src, dst / "opencode")
     build_prime(src, dst / "prime-agent")
     build_extras(src, dst / "extras")
     write(dst / "README.md", README)
     write(dst / "ADAPTATIONS.md", ADAPTATIONS)
+    for target in ("opencode", "prime-agent"):
+        n = apply_overrides(dst, target)
+        if n:
+            print(f"applied {n} override(s) to {target}/")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--src", help="local pstack checkout (default: fetched cache)")
+    ap.add_argument("--dst", default="/home/ubuntu/pstack-ports")
+    ap.add_argument("--fetch", action="store_true",
+                    help="download upstream pstack at --ref into .upstream/ and build from it")
+    ap.add_argument("--ref", default="main", help="upstream ref/tag/sha (default: main)")
+    ap.add_argument("--check", action="store_true",
+                    help="regenerate to a temp dir and print a drift report (no writes)")
+    args = ap.parse_args()
+    dst = Path(args.dst)
+    cache = dst / ".upstream" / UPSTREAM_SUBDIR
+
+    src_desc = None
+    if args.src:
+        src = Path(args.src)
+        src_desc = f"local checkout: {src}"
+    elif args.fetch:
+        src, sha = fetch_upstream(args.ref, cache)
+        (cache.parent / "SHA").write_text(sha + "\n")
+        src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree)"
+    elif cache.is_dir():
+        src = cache
+        sha_file = cache.parent / "SHA"
+        sha = sha_file.read_text().strip() if sha_file.exists() else "unknown"
+        src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree, cached)"
+    else:
+        sys.exit("no source: pass --fetch to download upstream or --src DIR for a local checkout")
+
+    if args.check:
+        with tempfile.TemporaryDirectory() as tmp:
+            build_all(src, Path(tmp))
+            print(drift_report(Path(tmp), dst))
+        return
+
+    build_all(src, dst)
+    if src_desc:
+        write_stamp(dst, src_desc)
     print("wrote", dst)
 
 
