@@ -38,6 +38,22 @@ reviewable diffs.
 
 ## Install
 
+Both harnesses at once (or pick one):
+
+```sh
+./install.sh             # install into prime-agent and opencode
+./install.sh prime       # ~/.prime/agent only
+./install.sh opencode    # ~/.config/opencode only
+
+./uninstall.sh           # same targeting; removes only the files this repo
+                         # ships plus the /setup-pstack artifacts, leaving
+                         # anything you added yourself untouched
+```
+
+Destinations default to `~/.prime/agent` and `~/.config/opencode`; override
+with `PRIME_DST` / `OPENCODE_DST`. Per-harness scripts are below — the
+wrappers just call them.
+
 ### opencode
 
 ```sh
