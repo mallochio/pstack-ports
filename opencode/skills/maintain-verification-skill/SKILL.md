@@ -1,9 +1,9 @@
 ---
 name: maintain-verification-skill
-description: 'Periodic pass that keeps a project''s verification skill and feature
-  map honest: parallel source readers per feature, one live session driving every
-  feature, at most one PR of proven corrections. Use for the `maintain-verification-skill`
-  skill or "audit the verify skill".'
+description: 'Only use when poteto-mode is active for this task. Periodic pass that
+  keeps a project''s verification skill and feature map honest: parallel source readers
+  per feature, one live session driving every feature, at most one PR of proven corrections.
+  Use for the `maintain-verification-skill` skill or "audit the verify skill".'
 metadata:
   disable_model_invocation: 'true'
 license: MIT

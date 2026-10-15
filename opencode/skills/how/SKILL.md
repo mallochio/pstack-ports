@@ -1,9 +1,10 @@
 ---
 name: how
-description: Use for "how does X work", code walkthroughs before changing something,
-  and placement / ownership / layering questions ("where should this live", "which
-  package owns this", "is this the right layer"). Explains subsystem architecture,
-  runtime flow, onboarding mental models. Use why for motivation.
+description: Only use when poteto-mode is active for this task. Use for "how does
+  X work", code walkthroughs before changing something, and placement / ownership
+  / layering questions ("where should this live", "which package owns this", "is this
+  the right layer"). Explains subsystem architecture, runtime flow, onboarding mental
+  models. Use why for motivation.
 metadata:
   disable_model_invocation: 'true'
 license: MIT
@@ -14,7 +15,7 @@ compatibility: opencode
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Every spawn is a Task subagent with the `general` subagent and `readonly: true`. Explorers use the `how explorer` line in the `pstack-models.md` rule (default `anthropic/claude-haiku-4-5`), and every explainer uses the `how explainer` line (default `claude-opus-5-5-xhigh`). Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `task` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
+Every spawn uses the `general` subagent with a read-only brief: instruct the child it must not modify files or run mutating commands. Explorers use the `how explorer` line in the `pstack-models.md` rule (default `inherit-parent`), and every explainer uses the `how explainer` line (default `inherit-parent`). Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `task` tool rejects a role value, omit `model` so that seat runs on the parent model and say so. If it rejects that, omit `model` so it runs on the parent model and say so. Pick each subagent's reasoning level for the job, per the Subagents section of the **poteto-mode** skill.
 
 ## 1. Assess complexity
 

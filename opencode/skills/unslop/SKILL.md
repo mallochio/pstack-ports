@@ -1,6 +1,7 @@
 ---
 name: unslop
-description: Cut AI tells from any writing.
+description: Only use when poteto-mode is active for this task. Cut AI tells from
+  any writing.
 metadata:
   disable_model_invocation: 'true'
 license: MIT

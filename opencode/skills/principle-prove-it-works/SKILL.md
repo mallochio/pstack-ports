@@ -1,8 +1,8 @@
 ---
 name: principle-prove-it-works
-description: Apply after completing a task, before declaring done. Verify against
-  the real artifact (run the feature, read the actual value, inspect the diff), not
-  a proxy, self-report, or 'it compiles.
+description: Only use when poteto-mode is active for this task. Apply after completing
+  a task, before declaring done. Verify against the real artifact (run the feature,
+  read the actual value, inspect the diff), not a proxy, self-report, or 'it compiles.
 metadata:
   disable_model_invocation: 'true'
 license: MIT

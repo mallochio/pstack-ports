@@ -1,7 +1,8 @@
 ---
 name: sharpen
-description: 'Sharpen a task before starting: the expert approach, what the user is
-  really after, and the right level of specification. Use for the `sharpen` skill.'
+description: 'Only use when poteto-mode is active for this task. Sharpen a task before
+  starting: the expert approach, what the user is really after, and the right level
+  of specification. Use for the `sharpen` skill.'
 metadata:
   disable_model_invocation: 'true'
 license: MIT

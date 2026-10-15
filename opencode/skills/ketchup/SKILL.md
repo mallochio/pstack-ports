@@ -1,8 +1,9 @@
 ---
 name: ketchup
-description: Catch the user up on what changed in this chat since their last message,
-  in a few plain sentences and small visuals. Give each action item just enough context
-  to make the call. Use for the `ketchup` skill.
+description: Only use when poteto-mode is active for this task. Catch the user up
+  on what changed in this chat since their last message, in a few plain sentences
+  and small visuals. Give each action item just enough context to make the call. Use
+  for the `ketchup` skill.
 metadata:
   disable_model_invocation: 'true'
 license: MIT

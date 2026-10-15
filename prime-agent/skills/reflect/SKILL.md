@@ -1,8 +1,8 @@
 ---
 name: reflect
-description: Spawn three parallel review subagents over the active transcript, surface
-  learnings, and route each to a concrete edit on an existing skill. Use when the
-  user says reflect.
+description: Only use when poteto-mode is active for this task. Spawn three parallel
+  review subagents over the active transcript, surface learnings, and route each to
+  a concrete edit on an existing skill. Use when the user says reflect.
 disable-model-invocation: true
 ---
 
@@ -17,7 +17,7 @@ Invoke when the user says "reflect" or "`/skill:reflect`". Skip when the convers
 Before fanning out, find this conversation's transcript in the `~/.prime/agent/sessions/` directory the system prompt names. Do not glob across `~/.prime/agent/sessions/ entries outside this session`. That crosses workspace boundaries and reads private chats from unrelated projects.
 
 ```bash
-ls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10
+list recent session files in this session's transcript directory (see the harness notes for the store path)
 ```
 
 That covers the legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`) layouts. For each candidate, read the first JSONL line. Take the file whose `message.content[0].text` contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.
@@ -26,19 +26,19 @@ That covers the legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), 
 
 One message, three `rlm.spawn` calls, a plain `rlm.spawn` child, full tool access. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and read-only modes strip MCPs.
 
-Each reviewer and the synthesizer name a role line in the `pstack-models` block rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `rlm.spawn` API rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
+Each reviewer and the synthesizer name a role line in the `pstack-models.md` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `rlm.spawn` API rejects a role value, omit `model` so that seat runs on the parent model and say so. If it rejects that, omit `model` so it runs on the parent model and say so. Pick each subagent's reasoning level for the job, per the Subagents section of the **poteto-mode** skill.
 
 | Lens | Role line | Default `model` | Prompt template |
 |---|---|---|---|
-| Judgment | `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/judgment-reviewer.md` |
-| Tooling | `reflect tooling` | `anthropic/claude-haiku-4-5` | `references/tooling-reviewer.md` |
-| Divergent | `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/divergent-reviewer.md` |
+| Judgment | `reflect judgment, divergent, synthesizer` | `inherit-parent` | `references/judgment-reviewer.md` |
+| Tooling | `reflect tooling` | `inherit-parent` | `references/tooling-reviewer.md` |
+| Divergent | `reflect judgment, divergent, synthesizer` | `inherit-parent` | `references/divergent-reviewer.md` |
 
 Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the `rlm.spawn` response body.
 
 ## 3. Synthesize
 
-One `rlm.spawn` call, a plain `rlm.spawn` child, `model` from the `reflect judgment, divergent, synthesizer` line (default `claude-opus-5-5-xhigh`), full tool access. It spot-verifies citations through MCP, and read-only modes strip MCPs. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
+One `rlm.spawn` call, a plain `rlm.spawn` child, `model` from the `reflect judgment, divergent, synthesizer` line (default `inherit-parent`), full tool access. It spot-verifies citations through MCP, and read-only modes strip MCPs. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
 
 ## 4. Structural enforcement check
 
@@ -54,8 +54,8 @@ Follow each approved row's Routing exactly:
 
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): the parent does it directly.
 - Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): hand to the `skill-creator` skill and run its draft / test / iterate loop.
-- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): hand to `create-skill` and run its description-optimization loop.
-- `new skill via create-skill: <kebab-name>`: hand creation to `create-skill`. Do not invent the shape ad hoc.
+- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): hand to `skill-creator` and run its description-optimization loop.
+- `new skill via skill-creator: <kebab-name>`: hand creation to `skill-creator`. Do not invent the shape ad hoc.
 
 If your environment ships a SKILL.md validator, run it on every touched skill before declaring done.
 

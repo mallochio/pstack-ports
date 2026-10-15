@@ -1,8 +1,8 @@
 ---
 name: principle-guard-the-context-window
-description: 'Apply when context is filling up: large outputs, long files, repeated
-  reads, fan-out planning. Route bulk to subagents; keep summaries in the main thread,
-  not raw payloads.'
+description: 'Only use when poteto-mode is active for this task. Apply when context
+  is filling up: large outputs, long files, repeated reads, fan-out planning. Route
+  bulk to subagents; keep summaries in the main thread, not raw payloads.'
 metadata:
   disable_model_invocation: 'true'
 license: MIT

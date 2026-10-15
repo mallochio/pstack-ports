@@ -40,30 +40,35 @@ UPSTREAM_SUBDIR = "pstack"
 # Per-harness constants
 # ---------------------------------------------------------------------------
 
-# Default role models. Cursor slugs embed an effort ladder (…-max/-xhigh/…-fast);
-# the targets use plain provider/model selectors, so defaults are chosen to keep
-# the fast-vs-judgment split and are overridable via the setup-pstack skill.
+# Default role models. These are EXAMPLES ONLY for the setup-pstack skill's
+# budget-tier illustration. Generated skill bodies default every role to
+# `inherit-parent` (omit `model`) so the ports work with zero hard-coded slugs:
+# the user defines per-role models via setup-pstack, or everything simply runs
+# on the parent model. Never write a concrete slug into a skill body default.
 MODELS = {
     "fast_code": "anthropic/claude-haiku-4-5",
     "judgment": "anthropic/claude-opus-4-5",
     "panel_third": "openai/gpt-5.1",
 }
 
+# Legacy exact-map of known Cursor slugs. Kept for reference; the live rewrite
+# uses effort-ladder REGEXES below so new upstream suffixes (-xhigh/-high/…)
+# can never leak through. All Cursor slugs map to `inherit-parent`.
 CURSOR_SLUGS = {
-    "grok-4.7-xhigh-fast": MODELS["fast_code"],
-    "grok-4.7-medium-fast": MODELS["fast_code"],
-    "claude-opus-5-5-max": MODELS["judgment"],
-    "claude-opus-5-5-medium": MODELS["judgment"],
-    "gpt-5.6-sol-max": MODELS["panel_third"],
+    "grok-4.7-xhigh-fast": "inherit-parent",
+    "grok-4.7-medium-fast": "inherit-parent",
+    "claude-opus-5-5-max": "inherit-parent",
+    "claude-opus-5-5-medium": "inherit-parent",
+    "gpt-5.6-sol-max": "inherit-parent",
 }
 
 MODELS_FILE = {
     "opencode": "`~/.config/opencode/pstack-models.md`",
-    "prime-agent": "the `pstack-models` block in `~/.prime/agent/AGENTS.md`",
+    "prime-agent": "`~/.prime/agent/pstack-models.md`",
 }
 MODELS_BASENAME = {
     "opencode": "pstack-models.md",
-    "prime-agent": "`pstack-models` block",
+    "prime-agent": "pstack-models.md",
 }
 
 # Skills that exist inside pstack (so `/name` means "the name skill").
@@ -108,13 +113,18 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
 
     rules: list[tuple[str, str]] = [
         # ---- model config file -------------------------------------------------
+        # Both harnesses use a standalone file. Prime keeps only a pointer
+        # block in AGENTS.md so pstack stays removable without touching the
+        # rest of that file.
+        (r"`~/\.cursor/rules/pstack-models\.mdc`",
+         "`pstack-models.md`"),
         (re.escape("~/.cursor/rules/pstack-models.mdc"),
          "~/.config/opencode/pstack-models.md" if not is_prime
-         else "the `pstack-models` block in `~/.prime/agent/AGENTS.md`"),
+         else "~/.prime/agent/pstack-models.md"),
         (r"`pstack-models\.mdc`",
-         "`pstack-models.md`" if not is_prime else "`pstack-models` block"),
+         "`pstack-models.md`"),
         (r"pstack-models\.mdc",
-         "pstack-models.md" if not is_prime else "pstack-models block"),
+         "pstack-models.md"),
         # ---- transcripts -------------------------------------------------------
         (r"`~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>\.jsonl`[^.]*"
          r"(where `<slug>` is the workspace path with the leading slash dropped and each \"/\" turned into \"-\" \(so `/Users/you/proj` becomes `Users-you-proj`\))?\.\s*Every line is one chat message\.",
@@ -233,16 +243,33 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (r"Cursor's built-in babysit skill",
          "a built-in babysit helper"),
         # ---- subagent mechanics --------------------------------------------------
-        (r"Substituting `generalPurpose` skips",
+        (r"Substituting\s+`generalPurpose`\s+skips",
          "Substituting a plain child skips"),
         (r"`?subagent_type`?: ?`?\"?generalPurpose\"?`?",
          "a plain `rlm.spawn` child" if is_prime else "the `general` subagent"),
+        # bare `generalPurpose` with no subagent_type prefix (e.g. why skill)
+        (r"is `generalPurpose` with",
+         "is a plain `rlm.spawn` child with" if is_prime else "is the `general` subagent with"),
+        (r"`generalPurpose`",
+         "a plain child" if is_prime else "the `general` subagent"),
+        # dedupe spawns rewritten from "Task subagent with subagent_type: X"
+        (r"Every spawn is a Task subagent with the `general` subagent and",
+         "Every spawn uses the `general` subagent with"),
+        (r"Every spawn is a Task subagent with a plain `rlm\.spawn` child and",
+         "Every spawn is a plain `rlm.spawn` child with"),
+        (r"Every spawn is a RLM child with a plain `rlm\.spawn` child and",
+         "Every spawn is a plain `rlm.spawn` child with"),
         (r"`subagent_type: ?\"poteto-agent\"`|subagent_type: \"poteto-agent\"",
          "an `rlm.spawn` child whose prompt opens with the `poteto-agent` spec paragraph"
          if is_prime else "the `poteto-agent` subagent"),
         (r"`subagent_type: \"Comment Sicko\"`|subagent_type: \"Comment Sicko\"",
          "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
          if is_prime else "the `comment-sicko` subagent"),
+        # lowercase variant used by no-comments skill: valid opencode
+        # subagent_type, but meaningless to rlm.spawn — inline the spec instead.
+        (r"`subagent_type: \"comment-sicko\"`|subagent_type: \"comment-sicko\"",
+         "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
+         if is_prime else "`subagent_type: \"comment-sicko\"`"),
         (r"`subagent_type`:",
          "child spec:" if is_prime else "`subagent_type`:"),
         (r"Spawn one Task subagent", "Spawn one %s" % ("`rlm.spawn` child" if is_prime else "Task subagent")),
@@ -262,14 +289,35 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (r"\bTask calls\b", "`rlm.spawn` calls" if is_prime else "task calls"),
         (r"`Task`", "`rlm.spawn`" if is_prime else "`task`"),
         (r"\bTask\b(?= with)", "`rlm.spawn`" if is_prime else "`task`"),
+        (r"\bTask\b(?= spawn)", "`rlm.spawn` child" if is_prime else "`task`"),
+        (r"\bevery Task spawn\b", "every `rlm.spawn` child" if is_prime else "every task spawn"),
         (r"Spawn `Task`", "Spawn %s" % ("an `rlm.spawn` child" if is_prime else "a `task`")),
         # run_in_background
         (r"`run_in_background: true`",
          "children run concurrently once spawned — collect them with `rlm.collect`"
          if is_prime else "run in the background where the task tool supports it"),
         (r"run_in_background: true", "concurrent children" if is_prime else "background tasks"),
-        # agent mode / readonly
+        # agent mode / readonly (list forms AND inline backticked forms)
         (r"agent mode \(`readonly: false`\)|agent mode \(readonly strips MCP\)",
+         "full tool access"),
+        (r"`readonly: (?:true|false)` \(agent mode\)",
+         "full tool access"),
+        (r"with `readonly: false` \(agent mode\)",
+         "with full tool access"),
+        (r"`readonly`: `true`",
+         "a read-only brief: instruct the child it must not modify files or run "
+         "mutating commands"),
+        (r"`readonly`: `false` \(agent mode\)\.",
+         "full tool access."),
+        # colon-inside-backticks inline forms (how/why/interrogate upstream)
+        (r"`readonly: (?:true|false)` \(agent mode\)",
+         "full tool access"),
+        (r"with `readonly: false` \(agent mode\)",
+         "with full tool access"),
+        (r"`readonly: true`",
+         "a read-only brief: instruct the child it must not modify files or run "
+         "mutating commands"),
+        (r"`readonly: false`",
          "full tool access"),
         (r"- `readonly`: `true`",
          "- read-only brief: instruct the child it must not modify files or run "
@@ -296,6 +344,27 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (r"Cursor cloud agent",
          "resident depth-0 session (`rlm.create_session`)" if is_prime else
          "dedicated background subagent session"),
+        # cloud workers / spawns / topology (swarm, orchestrate, multi-phase-plan)
+        (r"Fan out N parallel cloud workers\.",
+         "Fan out N parallel workers."),
+        (r"parallel cloud workers", "parallel workers"),
+        (r"N is total workers, not the cloud concurrency limit\.",
+         "N is total workers, not a harness concurrency limit."),
+        (r"Use a local task only when the worker needs access to something on the user's computer\.",
+         "Stay on this machine only when the worker needs local access; otherwise spawn normally."),
+        (r"When a worker must start from a non-default pushed branch, pass `cloud_base_branch`\.",
+         "When a worker must start from a non-default pushed branch, start it on that branch if the harness supports it; otherwise say so and stay on the default branch."),
+        (r"`cloud_base_branch`",
+         "a base-branch override the harness supports (else the default branch)"),
+        (r"Verbatim paste is for cloud spawns and every resume\.",
+         "Verbatim paste is for cross-session handoffs and every resume."),
+        (r"cloud spawns", "cross-session handoffs" if not is_prime else "daemon-session handoffs"),
+        (r"its spawn budget with the cloud default and the local exception list",
+         "its spawn budget with the default and the exception list"),
+        (r"Chain rebases run in cloud\.", "Keep chain rebases serialized on one worker."),
+        (r"Each live lane runs on its own cloud VM",
+         "Each live lane runs in its own worker/session"),
+        (r"cloud VM", "worker" if not is_prime else "session"),
         (r"cloud agents", "resident sessions" if is_prime else "background sessions"),
         (r"cloud agent", "resident session" if is_prime else "background session"),
         (r"Cloud agents", "Resident sessions" if is_prime else "Background sessions"),
@@ -314,7 +383,28 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
          "About to ask the human a structured question"),
         (r"`AskQuestion`", "a structured question"),
         (r"AskQuestion", "a structured question"),
-        # ---- /loop -----------------------------------------------------------------
+        # ---- poteto-agent lookup: no .cursor-plugin dir on these harnesses ----
+        (r"If more than one file matches, use the copy whose `\.cursor-plugin/plugin\.json` has the highest `version`\.",
+         "If more than one file matches, use the copy under the active config directory."),
+        # ---- make-bot-ui secret handoff: Cursor-only card ----------------------
+        (r"Do not accept the sender key in chat\. Send a secret-request, then stop\. That card is the whole turn\.",
+         "Do not accept the sender key in chat. The secret-request card is Cursor-only — pause and ask the user to store the key in the automation host out of band, then continue."),
+        (r"type: secret-request",
+         "type: secret-request (Cursor-only — collect the key out of band on other harnesses)"),
+        (r"SendToUser\n",
+         "SendToUser (Cursor-only card)\n"),
+        (r"The wake is a `\[routine\]` turn for that webhook routine\. It includes a `<webhook_event>` block with `headers` \(`content-type`, `user-agent`\), `body_digest` \(sha256\), `body`, and `timestamp_ms`\.",
+         "The wake is a webhook-triggered turn for that routine. On Cursor routines it includes a `<webhook_event>` block with `headers`, `body_digest` (sha256), `body`, and `timestamp_ms`; other hosts expose an equivalent payload."),
+        # ---- reflect transcript listing placeholder ----------------------------
+        (r"ls -t <agent-transcripts>/\*\.jsonl <agent-transcripts>/\*/\*\.jsonl <agent-transcripts>/\*/subagents/\*\.jsonl 2>/dev/null \| head -10",
+         "list recent session files in this session's transcript directory (see the harness notes for the store path)"),
+        # ---- poteto-help upstream disclaimer (ported verbatim upstream) --------
+        (r"pstack is built for Cursor\. Its skills use the Agent Skills format, so other tools can read them\. But most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn Cursor subagents with per-role models, and Custom Modes and `/loop` are Cursor features, so those parts may not work there\.",
+         ("pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto prime-agent (`rlm.spawn`, `pstack-models.md`, scheduled wakes), so the workflow skills work here. Custom Modes remain Cursor-only — invoke `/skill:poteto-mode` per task.")
+         if is_prime else
+         ("pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto opencode (the `task` tool, `pstack-models.md`, background watchers), so the workflow skills work here. Custom Modes remain Cursor-only — start each task with `/poteto-mode`.")),
+
+        # ---- /loop ---------------------------------------------------------------
         (r"Cursor's `/loop` command \(a built-in, not a pstack skill\)",
          "a heartbeat/scheduled wake (goals, schedules, `rlm-heartbeat`)" if is_prime else
          "a re-armed wake (a background watcher task or repeated checks)"),
@@ -338,8 +428,71 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (r"/loop 1h", "a 1h periodic wake" if not is_prime else "a 1h scheduled wake"),
         (r"`/loop`", "a periodic wake" if not is_prime else "a scheduled wake"),
         (r"/loop\b", "a periodic wake" if not is_prime else "a scheduled wake"),
-        # ---- model slugs ------------------------------------------------------------
+        # ---- poteto-help built-ins line ---------------------------------------
+        (r"`/loop` and `/create-skill` are Cursor built-ins\.",
+         ("a scheduled wake and `skill-creator` are the harness equivalents.")
+         if is_prime else
+         "a periodic wake and the `authoring-a-skill` playbook conventions are the harness equivalents."),
+        # ---- model slugs: effort-ladder REGEXES (never leak new suffixes) -----
+        # Cursor slugs embed effort (-max/-xhigh/-high/-medium/-low, -fast).
+        # Ports are slug-free: every role defaults to `inherit-parent`.
+        (r"`grok-4\.7-(?:xhigh|high|medium|low)(?:-fast)?`", "`inherit-parent`"),
+        (r"`claude-opus-5-5-(?:max|xhigh|high|medium|low)`", "`inherit-parent`"),
+        (r"`gpt-5\.6-sol-max`", "`inherit-parent`"),
+        (r"\bgrok-4\.7-(?:xhigh|high|medium|low)(?:-fast)?\b", "inherit-parent"),
+        (r"\bclaude-opus-5-5-(?:max|xhigh|high|medium|low)\b", "inherit-parent"),
+        # own example slugs must never survive as skill-body defaults either
+        (r"`anthropic/claude-(?:haiku|sonnet|opus)-4-5`", "`inherit-parent`"),
+        (r"`openai/gpt-5\.1`", "`inherit-parent`"),
+        # panel/family fallback prose: Cursor families mean nothing here
+        (r"Families go by prefix: `claude-\*`, and `grok-\*` with `cursor-grok-\*` and `composer-\*`\.?",
+         "Families go by the role line; unlisted families fall back to the parent model."),
+        (r"A refused `composer-\*` entry runs on (`anthropic/claude-haiku-4-5`|Reviewer B's default|its family's default|`grok-4\.7-xhigh-fast`|`inherit-parent`)\.",
+         "A refused entry runs on the parent model."),
+        (r"A refused `composer-\*` entry runs on [^.\n]*\.",
+         "A refused entry runs on the parent model."),
+        (r"If the `task` tool rejects a slug, use the default and say so\.",
+         "If the `task` tool rejects a role value, omit `model` so that seat runs on the parent model and say so."),
+        (r"If the `rlm\.spawn` API rejects a slug, use the default and say so\.",
+         "If the `rlm.spawn` API rejects a role value, omit `model` so that seat runs on the parent model and say so."),
+        (r"If it rejects the default, use the closest valid slug of the same family from its error message\.",
+         "If it rejects that, omit `model` so it runs on the parent model and say so."),
+        (r" and fast or standard speed", ""),
+        (r"A refused `composer-\*` entry runs on `grok-4\.7-xhigh-fast`\.",
+         "A refused entry runs on the parent model."),
+        (r"With no family match, use `claude-opus-5-5-xhigh`\.?",
+         "With no family match, use the parent model."),
+        (r"With no family match, use `inherit-parent`\.?",
+         "With no family match, use the parent model."),
+        (r"If it rejects a default, use the closest valid slug of the same family from its error message\.",
+         "If it rejects the role value, omit `model` so the seat runs on the parent model and say so."),
+        (r"If the (`task`|`` `rlm\.spawn` ``|`rlm\.spawn` API|Task) tool rejects a configured entry, run that (seat|reviewer) on its family's (table default|default) and say so\.",
+         "If the spawn API rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
+        (r"If the `task` tool rejects a configured entry, run that seat on its family's default and say so\.",
+         "If the `task` tool rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
+        (r"If the `rlm\.spawn` API rejects a configured entry, run that seat on its family's default and say so\.",
+         "If the `rlm.spawn` API rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
+        (r"If the `task` tool rejects a configured entry, run that reviewer on its family's table default and say so\.",
+         "If the `task` tool rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so."),
+        (r"If the `rlm\.spawn` API rejects a configured entry, run that reviewer on its family's table default and say so\.",
+         "If the `rlm.spawn` API rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so."),
+        (r"spawn with the closest equivalent from the valid slugs in its error message \(prefer the same family and reasoning tier\), and open a separate PR to update the default table\. Do not block the (review|work) on the slug issue\.",
+         "omit `model` so it runs on the parent model and continue. Do not block the \\1 on the model issue."),
+        (r"., and open a separate PR to update the default table\. Do not block the review on the slug issue\.",
+         " and continue; do not block the review on the model issue."),
+        (r"default to one each on `inherit-parent` and `inherit-parent`",
+         "default to `inherit-parent` for each seat (omit `model`)"),
+        (r"choose from `inherit-parent` and `inherit-parent`",
+         "use `inherit-parent` (omit `model`) unless a role line sets models"),
+        (r"use `inherit-parent` and `inherit-parent`",
+         "use `inherit-parent` for each runner (omit `model`)"),
+        (r"Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the \*\*poteto-mode\*\* skill\.",
+         "Pick each subagent's thinking/reasoning level for the job, per the Subagents section of the **poteto-mode** skill."),
+        # exact legacy maps (kept last so regexes above win)
         *[(re.escape(k), v) for k, v in CURSOR_SLUGS.items()],
+        # ---- generic create-skill fallback (after specific sentence rules) ----
+        (r"`create-skill`", "`skill-creator`" if is_prime else "the `authoring-a-skill` playbook"),
+        (r"\bcreate-skill\b", "skill-creator" if is_prime else "authoring-a-skill"),
         # ---- forge/watch ------------------------------------------------------------
         (r"re-read this playbook from trunk with `git show origin/main:pstack/",
          "re-read this playbook from your installed pstack copy at `"),
@@ -354,15 +507,30 @@ def rewrite_slashes(text: str, target: str) -> str:
     # /skill:-style rewrites without edits here.
     skill_names = ACTIVE_SKILLS or PSTACK_SKILLS
     names = "|".join(sorted(re.escape(n) for n in (ALL_SLASH - PSTACK_SKILLS) | skill_names))
-    # Optional surrounding backticks are consumed so replacements never nest;
-    # the lookbehind blocks path segments (e.g. playbooks/babysit.md).
-    pat = re.compile(r"(?<![\w.:/-])`?/(" + names + r")\b`?(?![\w-])")
+    # 1. Exact backticked `/skill`: consume both backticks so replacements never nest.
+    pat_bt = re.compile(r"`/(" + names + r")`(?!\w)")
+    # 2. Bare `/skill` (including inside a longer backticked span like
+    #    `/poteto-mode do X`): leave surrounding backticks intact, strip outer
+    #    backticks from the replacement if it lands inside an open span.
+    pat_bare = re.compile(r"(?<![\w.:/-])/(" + names + r")\b(?![\w-])")
 
-    def _sub(m: re.Match) -> str:
-        name = m.group(1)
-        return slash_repl(target, name)
+    def _sub_bt(m: re.Match) -> str:
+        return slash_repl(target, m.group(1))
 
-    return pat.sub(_sub, text)
+    text = pat_bt.sub(_sub_bt, text)
+
+    # Track backtick parity per line so a bare /skill inside `...` doesn't
+    # inject inner backticks that break the span.
+    out_lines = []
+    for line in text.splitlines(keepends=True):
+        def _sub_bare(m: re.Match, _line: str = line) -> str:
+            rep = slash_repl(target, m.group(1))
+            before = _line[:m.start()]
+            if before.count("`") % 2 == 1:
+                return rep.replace("`", "")
+            return rep
+        out_lines.append(pat_bare.sub(_sub_bare, line))
+    return "".join(out_lines)
 
 
 # ---------------------------------------------------------------------------
@@ -385,21 +553,47 @@ def dump_frontmatter(fm: dict) -> str:
     return "---\n" + yaml.safe_dump(fm, sort_keys=False, default_flow_style=False).strip() + "\n---\n"
 
 
+# Skills directly invocable by the user. Everything else is gated behind
+# poteto-mode: it loads gated skills explicitly per playbook, and harnesses
+# must not trigger them autonomously.
+ENTRY_SKILLS = {"poteto-mode", "setup-pstack", "poteto-help"}
+
+# Description prefix marking a skill as poteto-mode-gated. Flags alone are not
+# honored by every harness, so the description itself carries the gate.
+GATE_PREFIX = "Only use when poteto-mode is active for this task. "
+
+
 def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
     out: dict = {"name": dirname}
+    gated = dirname not in ENTRY_SKILLS
     if "description" in fm:
         d = str(fm["description"]).strip().strip('"').strip("'")
-        out["description"] = rewrite_slashes(d, target)
+        d = rewrite_slashes(d, target)
+        # descriptions bypass transform_markdown: apply the harness-specific
+        # authoring-skill name so frontmatter never routes to Cursor's tool.
+        if target == "prime-agent":
+            d = re.sub(r"`create-skill`", "`skill-creator`", d)
+            d = re.sub(r"\bcreate-skill\b", "skill-creator", d)
+        else:
+            d = re.sub(r"`create-skill`", "the `authoring-a-skill` playbook", d)
+            d = re.sub(r"\bcreate-skill\b", "authoring-a-skill", d)
+        if gated and not d.startswith(GATE_PREFIX):
+            d = GATE_PREFIX + d
+        out["description"] = d
     else:
-        out["description"] = dirname
+        out["description"] = GATE_PREFIX + dirname if gated else dirname
     if target == "prime-agent":
-        if fm.get("disable-model-invocation"):
+        # Gated skills carry the flag; entry skills keep upstream's choice
+        # (poteto-mode and poteto-help stay true, setup-pstack stays false).
+        if gated or fm.get("disable-model-invocation"):
             out["disable-model-invocation"] = True
     else:
         meta = {}
         for k in ("mode", "icon", "color", "reminder", "disable-model-invocation"):
             if k in fm:
                 meta[k.replace("-", "_")] = str(fm[k]).lower() if isinstance(fm[k], bool) else str(fm[k])
+        if gated:
+            meta["disable_model_invocation"] = "true"
         if meta:
             out["metadata"] = meta
         out["license"] = "MIT"
@@ -411,23 +605,21 @@ def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
 # poteto-mode SKILL.md targeted rewrites
 # ---------------------------------------------------------------------------
 
-POTETO_SUBAGENTS_OC = """**Spawn the `poteto-agent` subagent for any delegate you launch inside a playbook step** (code-writing delegates, ad-hoc helpers): it is installed as a `mode: subagent` agent, so a `task` call with subagent type `poteto-agent` gets the full style. `/poteto-mode` and `poteto-agent` route through the same body of rules. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own subagent/model mix for diverse-model review; respect what the skill prescribes, don't override to `poteto-agent`.
+POTETO_SUBAGENTS_OC = """**Spawn the `poteto-agent` subagent for any delegate you launch inside a playbook step** (code-writing delegates, ad-hoc helpers): it is installed as a `mode: subagent` agent, so a `task` call with subagent type `poteto-agent` gets the full style. `/poteto-mode` and `poteto-agent` route through the same body of rules. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own subagent mix for diverse-model review; respect what the skill prescribes, don't override to `poteto-agent`.
 
-**Defaults for every `task` call.** Prefer parallel spawns: launch independent delegates in one message and keep the main thread on summaries. Pass file pointers, not inlined context. Set an explicit `model` per role (configurable via `/setup-pstack` — defaults `%s` for code, `%s` for prose and judgment). Code delegates tier by difficulty: the hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`%s`); trivial mechanical edits go to the fast code model. Per-role lines in the `pstack-models.md` file override these defaults and the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). A role with no line keeps its default, and a role line of `inherit-parent` or `auto` runs that role on the parent model (omit `model`). Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
+**Defaults for every `task` call.** Prefer parallel spawns: launch independent delegates in one message and keep the main thread on summaries. Pass file pointers, not inlined context. Omit `model` unless a role line in `pstack-models.md` sets one — the default for every role is `inherit-parent`, so delegates run on the parent model out of the box with zero hard-coded slugs. Define per-role models once via `/setup-pstack` (it detects your `opencode models` slugs and writes them into `pstack-models.md`); a role with no line keeps `inherit-parent`, and `auto` is an alias for it. Code delegates tier by difficulty only when roles are configured: the hardest changes go to your strongest judgment model, trivial edits to the fast model. Per-role lines override the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-**Fresh subagents by default.** Give new work to a fresh subagent with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Resume or message an existing subagent only when the new work strictly needs state that lives in that agent and is costly to move: its local checkout, its uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running agent is not reuse. A role such as a PR owner outlives its agent. Once that agent returns, a fresh agent takes the role's next round. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary.""" % (
-    MODELS["fast_code"], MODELS["judgment"], MODELS["judgment"])
+**Fresh subagents by default.** Give new work to a fresh subagent with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Resume or message an existing subagent only when the new work strictly needs state that lives in that agent and is costly to move: its local checkout, its uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running agent is not reuse. A role such as a PR owner outlives its agent. Once that agent returns, a fresh agent takes the role's next round. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary."""
 
 POTETO_SUBAGENTS_PRIME = """**Spawn every delegate inside a playbook step as an `rlm.spawn` child whose prompt opens with the poteto-agent spec**: `You are operating as poteto-mode's full agent style. Read the poteto-mode skill's SKILL.md in full before doing any work, including its inline Principles index. Navigate to a leaf principle-* skill whenever you apply that principle.` The same paragraph is kept at `agents/poteto-agent.md` in this package. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own model mix for diverse-model review; respect what the skill prescribes.
 
-**Defaults for every `rlm.spawn` call.** Children run concurrently once spawned — fan out independent delegates, keep the main thread on summaries, and `rlm.collect` the results. Pass file pointers, not inlined context. Set an explicit `model` (`provider/model`) and `thinking` level per role (configurable via `/skill:setup-pstack` — defaults `%s` for code, `%s` for prose and judgment). Code delegates tier by difficulty: the hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`%s`, higher `thinking`); trivial mechanical edits go to the fast code model. Per-role lines in the `pstack-models` block of `~/.prime/agent/AGENTS.md` override these defaults and the model choices in the routed skills. A role with no line keeps its default, and a role line of `inherit-parent` or `auto` omits `model` so the child runs on the parent model. Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`. For a standing fan-out with joins, gates, or per-item children, prefer `rlm.factory` machines over ad-hoc spawn loops; enable it once with `/factory on`.
+**Defaults for every `rlm.spawn` call.** Children run concurrently once spawned — fan out independent delegates, keep the main thread on summaries, and `rlm.collect` the results. Pass file pointers, not inlined context. Omit `model` unless a role line in `~/.prime/agent/pstack-models.md` sets one — the default for every role is `inherit-parent`, so children run on the parent model out of the box with zero hard-coded slugs. Define per-role models once via `/skill:setup-pstack` (it calls `rlm.find_models()` and writes them into `pstack-models.md`); `auto` is an alias for `inherit-parent`, and `thinking` defaults to the parent level. Code delegates tier by difficulty only when roles are configured: the hardest changes go to your strongest judgment model (higher `thinking`); trivial edits to the fast model. Per-role lines override the model choices in the routed skills. Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`. For a standing fan-out with joins, gates, or per-item children, prefer `rlm.factory` machines over ad-hoc spawn loops; enable it once with `/factory on`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-**Fresh subagents by default.** Give new work to a fresh `rlm.spawn` child with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Message an existing child (`agent_message.send`) only when the new work strictly needs state that lives in that child and is costly to move: its checkout, uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running child is not reuse. A role such as a PR owner outlives its child. Once that child returns, a fresh child takes the role's next round. Resumed children silently drop directives, so fire a fresh child with consolidated scope rather than trusting a "done" summary.""" % (
-    MODELS["fast_code"], MODELS["judgment"], MODELS["judgment"])
+**Fresh subagents by default.** Give new work to a fresh `rlm.spawn` child with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Message an existing child (`agent_message.send`) only when the new work strictly needs state that lives in that child and is costly to move: its checkout, uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running child is not reuse. A role such as a PR owner outlives its child. Once that child returns, a fresh child takes the role's next round. Resumed children silently drop directives, so fire a fresh child with consolidated scope rather than trusting a "done" summary."""
 
 # Additional poteto-mode body tweaks per target (list of (old, {oc, prime})).
 POTETO_EDITS = [
@@ -444,22 +636,26 @@ HARNESS_NOTE = {
         "- Skills load on demand through the `skill` tool; `/poteto-mode` and `/setup-pstack` are real commands installed by this port. Other `/name` mentions in the ported text mean \"load the `name` skill\".\n"
         "- Subagents run through the `task` tool; `poteto-agent` and `comment-sicko` are installed as `mode: subagent` agents, and `poteto` is installed as a `mode: primary` agent you can Tab to.\n"
         "- The model role table lives at `~/.config/opencode/pstack-models.md` (registered in `opencode.json` `instructions`); `/setup-pstack` writes it.\n"
+        "- Models are slug-free by default: every role is `inherit-parent` (omit `model`) until you assign `provider/model` slugs via `/setup-pstack`. Skills never hard-code a model slug.\n"
         "- `Bugbot` means the forge's automated PR reviewer — whatever bot posts review comments on your PRs (Bugbot on Cursor; Copilot review, Devin Review, or a CI bot elsewhere). Triage it skeptically per `references/bugbot-triage.md`.\n"
         "- `Origin` is optional: where a playbook says `origin pr ...`, it applies only when the `origin` CLI exists and resolves the repo; otherwise stay on `gh`.\n"
         "- Where text references a periodic wake (`/loop` upstream), use a background task or watcher that re-arms; `scripts/watch-pr` covers GitHub PR wakes.\n"
         "- The `deslop`/`control-cli`/`control-ui` skills live in a different upstream plugin. Where they're named, use them if your setup ships them, else do the equivalent pass by hand.\n"
         "- The verification-skill convention (`.opencode/skills/verify-<app>/`) works as-is: project-local skills are discovered automatically.\n"
+        "- Gating: every skill except `/poteto-mode`, `/setup-pstack`, and `/poteto-help` carries `disable_model_invocation` and a description gate — the harness must not trigger pstack skills on its own. They load only when the task runs under `/poteto-mode`, which routes to them explicitly per playbook.\n"
     ),
     "prime-agent": (
         "## Harness notes (prime-agent port)\n\n"
         "- Skills load via the skill inventory; explicit invocation is `/skill:<name>` (for example `/skill:poteto-mode`). `disable-model-invocation` skills stay hidden until invoked.\n"
         "- Subagents are spawned children: `await rlm.spawn(prompt, name=..., model='provider/model', thinking='low|medium|high')`, collected with `rlm.collect`, and inspected with `agent_observe`/`agent_message`. For shaped fan-out (joins, bounded loops, per-item children) enable and use `rlm.factory` (`/factory on`).\n"
-        "- The model role table lives in a managed `pstack-models` block inside `~/.prime/agent/AGENTS.md`; `/skill:setup-pstack` writes it and `/skill:recall`-style transcripts live under `~/.prime/agent/sessions/`.\n"
+        "- The model role table lives in `~/.prime/agent/pstack-models.md` (a standalone file, like opencode's); `/skill:setup-pstack` writes it and keeps a pointer block in `~/.prime/agent/AGENTS.md`. Delete the pointer block (and the file) to stop applying pstack models. `/skill:recall`-style transcripts live under `~/.prime/agent/sessions/`.\n"
+        "- Models are slug-free by default: every role is `inherit-parent` (omit `model`) until you assign `provider/model` slugs via `/skill:setup-pstack`. Skills never hard-code a model slug.\n"
         "- `Bugbot` means the forge's automated PR reviewer — whatever bot posts review comments on your PRs (Bugbot on Cursor; Copilot review, Devin Review, or a CI bot elsewhere). Triage it skeptically per `references/bugbot-triage.md`.\n"
         "- `Origin` is optional: where a playbook says `origin pr ...`, it applies only when the `origin` CLI exists and resolves the repo; otherwise stay on `gh`.\n"
         "- Where upstream text says `/loop`, use a scheduled wake: `rlm-heartbeat`, a goal, or a daemon schedule.\n"
         "- `skill-creator` replaces upstream's `create-skill`; `deslop`/`control-cli`/`control-ui` are upstream-plugin skills — use them if installed, else do the equivalent pass by hand.\n"
         "- Long-running program playbooks (orchestrate, autopilot-*) map best onto the factory plus resident sessions (`rlm.create_session`).\n"
+        "- Gating: every skill except `poteto-mode`, `setup-pstack`, and `poteto-help` carries `disable-model-invocation` and a description gate — skills stay hidden until invoked. They load only when the task runs under `/skill:poteto-mode`, which routes to them explicitly per playbook.\n"
     ),
 }
 
@@ -480,7 +676,7 @@ Run `opencode models` and read the `provider/model` slugs the user has configure
 
 ### 2. Load current state
 
-The default role-to-model mapping is the table shown in step 5 below. If `~/.config/opencode/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
+Every role defaults to `inherit-parent` (omit `model`, run on the parent model), so the file works with zero hard-coded slugs. If `~/.config/opencode/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from all-`inherit-parent`. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
 
 ### 3. Budget, map, and confirm
 
@@ -491,7 +687,7 @@ The default role-to-model mapping is the table shown in step 5 below. If `~/.con
 - `medium — mid-tier slugs`
 - `small — cheapest slugs`
 
-**(b) Apply it.** Effort tokens don't exist in `provider/model` slugs, so budget moves between model tiers instead: keep each role's configured family but swap the member (for example `anthropic/claude-haiku-4-5` → `anthropic/claude-sonnet-4-5` → `anthropic/claude-opus-4-5` as budget rises). `inherit-parent` and `auto` do not change. If the result is not a detected slug, use the same family's detected slug nearest the target tier, else mark the role as needing a choice.
+**(b) Apply it.** Budget moves between model tiers instead of effort tokens: keep each role's configured family but swap the member (for example fast-tier → mid-tier → strongest-tier as budget rises). `inherit-parent` and `auto` do not change. If the result is not a detected slug, use the same family's detected slug nearest the target tier, else mark the role as needing a choice.
 
 **(c) Show the roles and confirm.** Show every role with its model, marking any real slug not in the detected set as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected models plus `inherit-parent` and `auto` (both mean: this role runs on the parent agent's model — opencode subagents inherit the invoking agent's model when `model` is omitted). For panel roles (arena runners, architect runners, interrogate reviewers) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model family differs from the parent's when possible. `swarm workers` is the default model for every worker unless a race or comparison assigns another model per arm.
 
@@ -504,26 +700,26 @@ Every real slug written must be in the detected set. `inherit-parent` and `auto`
 Write `~/.config/opencode/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Then ensure `~/.config/opencode/opencode.json` contains `\"{MODELS_FILE['opencode'].strip('`')}\"`-equivalent entry in its `instructions` array (add the file's absolute path if missing; leave any existing entries intact). Shape:
 
 ```
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
+# pstack model configuration. One line per role. Delete a line to fall back to the skill default (inherit-parent).
 # `inherit-parent` or `auto` as a value: the role runs on the parent model (omit the task `model`). Alias entries in a panel list still count toward its fan-out.
 # budget: unlimited
-feature, refactoring: {MODELS['fast_code']}
-bug-fix: {MODELS['fast_code']}
-perf-issue: {MODELS['fast_code']}
-hillclimb: {MODELS['fast_code']}
-judgment and prose: {MODELS['judgment']}
-hardest tasks: {MODELS['judgment']}
-how explorer: {MODELS['fast_code']}
-how explainer: {MODELS['judgment']}
-why investigators: {MODELS['fast_code']}
-why synthesizer: {MODELS['judgment']}
-reflect tooling: {MODELS['panel_third']}
-reflect judgment, divergent, synthesizer: {MODELS['judgment']}
-arena runners: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-arena cross-judge pool: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-swarm workers: {MODELS['fast_code']}
-architect runners: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-interrogate reviewers: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
+feature, refactoring: inherit-parent
+bug-fix: inherit-parent
+perf-issue: inherit-parent
+hillclimb: inherit-parent
+judgment and prose: inherit-parent
+hardest tasks: inherit-parent
+how explorer: inherit-parent
+how explainer: inherit-parent
+why investigators: inherit-parent
+why synthesizer: inherit-parent
+reflect tooling: inherit-parent
+reflect judgment, divergent, synthesizer: inherit-parent
+arena runners: inherit-parent
+arena cross-judge pool: inherit-parent
+swarm workers: inherit-parent
+architect runners: inherit-parent
+interrogate reviewers: inherit-parent
 ```
 
 ### 6. Confirm
@@ -537,7 +733,7 @@ Check whether the project has a way to drive the real app for proof (a `verify-*
 
 SETUP_PRIME = f"""# Setup pstack (prime-agent)
 
-Maintain the `pstack-models` block inside `~/.prime/agent/AGENTS.md`, the model-role table pstack skills read. The block is delimited by `<!-- pstack-models:start -->` and `<!-- pstack-models:end -->`; AGENTS.md content outside it is never touched.
+Write `~/.prime/agent/pstack-models.md`, the model-role table pstack skills read, and keep a pointer block in `~/.prime/agent/AGENTS.md` so the file stays discoverable. The pointer block is delimited by `<!-- pstack:start -->` and `<!-- pstack:end -->`; AGENTS.md content outside it is never touched. To stop applying pstack models, delete the pointer block (and the file if you no longer want it).
 
 ## Steps
 
@@ -547,11 +743,11 @@ From the kernel, call `await rlm.find_models()` (optionally with a query per fam
 
 ### 2. Load current state
 
-The default role-to-model mapping is the table shown in step 5 below. If an existing `pstack-models` block is present in `~/.prime/agent/AGENTS.md`, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
+Every role defaults to `inherit-parent` (omit `model`, run on the parent model), so the file works with zero hard-coded slugs. If `~/.prime/agent/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. If only a legacy `pstack-models` block (`<!-- pstack-models:start -->` … `<!-- pstack-models:end -->`) exists inside `~/.prime/agent/AGENTS.md`, migrate its values into the new file. Otherwise start from all-`inherit-parent`. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
 
 ### 3. Budget, map, and confirm
 
-**(a) Ask for a budget.** Prefer a structured choice prompt over free text. Offer these four options with these exact labels, and name the current budget when the block records one.
+**(a) Ask for a budget.** Prefer a structured choice prompt over free text. Offer these four options with these exact labels, and name the current budget when the file records one.
 
 - `unlimited — thinking=high`
 - `large — thinking=high, medium where a role tolerates it`
@@ -566,39 +762,45 @@ The default role-to-model mapping is the table shown in step 5 below. If an exis
 
 Every real slug written must be in the detected set. `inherit-parent` and `auto` always pass. If a chosen real slug is not available, stop and ask again.
 
-### 5. Write the block
+### 5. Write the file and pointer
 
-Write or replace the managed block in `~/.prime/agent/AGENTS.md` (create the file if absent). Keep content outside the markers byte-identical. Shape:
+Write `~/.prime/agent/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Shape:
 
 ```
-<!-- pstack-models:start -->
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
+# pstack model configuration. One line per role. Delete a line to fall back to the skill default (inherit-parent).
 # `inherit-parent` or `auto` as a value: omit `model` on rlm.spawn so the child runs on the parent model. Alias entries in a panel list still count toward its fan-out.
 # A value may append `; thinking=<level>` to set the spawn's reasoning level (`off|low|medium|high`).
 # budget: unlimited (thinking=high)
-feature, refactoring: {MODELS['fast_code']}
-bug-fix: {MODELS['fast_code']}
-perf-issue: {MODELS['fast_code']}
-hillclimb: {MODELS['fast_code']}
-judgment and prose: {MODELS['judgment']}; thinking=high
-hardest tasks: {MODELS['judgment']}; thinking=high
-how explorer: {MODELS['fast_code']}
-how explainer: {MODELS['judgment']}
-why investigators: {MODELS['fast_code']}
-why synthesizer: {MODELS['judgment']}
-reflect tooling: {MODELS['panel_third']}
-reflect judgment, divergent, synthesizer: {MODELS['judgment']}
-arena runners: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-arena cross-judge pool: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-swarm workers: {MODELS['fast_code']}
-architect runners: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-interrogate reviewers: {MODELS['judgment']}, {MODELS['panel_third']}, {MODELS['fast_code']}
-<!-- pstack-models:end -->
+feature, refactoring: inherit-parent
+bug-fix: inherit-parent
+perf-issue: inherit-parent
+hillclimb: inherit-parent
+judgment and prose: inherit-parent
+hardest tasks: inherit-parent
+how explorer: inherit-parent
+how explainer: inherit-parent
+why investigators: inherit-parent
+why synthesizer: inherit-parent
+reflect tooling: inherit-parent
+reflect judgment, divergent, synthesizer: inherit-parent
+arena runners: inherit-parent
+arena cross-judge pool: inherit-parent
+swarm workers: inherit-parent
+architect runners: inherit-parent
+interrogate reviewers: inherit-parent
+```
+
+Then ensure `~/.prime/agent/AGENTS.md` contains the pointer block (create AGENTS.md if absent). If a legacy `<!-- pstack-models:start -->` block is present, delete it and keep a single `<!-- pstack:start -->` block. Keep content outside the markers byte-identical. Pointer shape:
+
+```
+<!-- pstack:start -->
+pstack per-role models live in `pstack-models.md` in this directory (written by `/skill:setup-pstack`). Remove this block (and the file) to stop applying them.
+<!-- pstack:end -->
 ```
 
 ### 6. Confirm
 
-Tell the user the block was written and that it applies to new sessions. Re-running this skill updates it.
+Tell the user the file was written and that it applies to new sessions. Re-running this skill updates it. Mention that deleting the pointer block disables pstack model config without touching the rest of AGENTS.md.
 
 ### 7. Offer a verification skill (optional)
 
@@ -673,10 +875,15 @@ def process_skill_dir(src: Path, dst: Path, target: str) -> list[str]:
 
 def rewrite_poteto_mode(body: str, target: str) -> str:
     """Replace the Subagents section and add harness notes."""
-    start = body.index("## Subagents")
-    end = body.index("## Writing the reply")
     repl = POTETO_SUBAGENTS_PRIME if target == "prime-agent" else POTETO_SUBAGENTS_OC
-    body = body[:start] + "## Subagents\n\n" + repl + "\n\n" + body[end:]
+    # Match "## Subagents" up to the next "## " heading so an upstream rename of
+    # the following section never aborts the build.
+    m = re.search(r"^## Subagents\b.*?(?=^## )", body, re.S | re.M)
+    if m:
+        body = body[:m.start()] + "## Subagents\n\n" + repl + "\n\n" + body[m.end():]
+    else:
+        print("warning: '## Subagents' heading not found in poteto-mode; appending", file=sys.stderr)
+        body = body.rstrip() + "\n\n## Subagents\n\n" + repl + "\n"
     # append harness notes at end
     body = body.rstrip() + "\n\n" + HARNESS_NOTE[target] + "\n"
     return body
@@ -776,7 +983,9 @@ def build_opencode(src: Path, dst: Path) -> None:
     for f in sorted((src / "agents").glob("*.md")):
         fm, body = split_frontmatter(f.read_text(encoding="utf-8"))
         body = transform_markdown(body, "opencode", f.name)
-        new_fm = {"description": str(fm.get("description", f.stem)).strip().strip('"').strip("'"),
+        desc = str(fm.get("description", f.stem)).strip().strip('"').strip("'")
+        desc = transform_markdown(desc, "opencode", f.name)
+        new_fm = {"description": desc,
                   "mode": "subagent"}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in OC_AGENTS.items():
@@ -799,8 +1008,10 @@ def build_prime(src: Path, dst: Path) -> None:
     for f in sorted((src / "agents").glob("*.md")):
         fm, body = split_frontmatter(f.read_text(encoding="utf-8"))
         body = transform_markdown(body, "prime-agent", f.name)
+        desc = str(fm.get("description", f.stem)).strip().strip('"').strip("'")
+        desc = transform_markdown(desc, "prime-agent", f.name)
         new_fm = {"name": f.stem,
-                  "description": str(fm.get("description", f.stem)).strip().strip('"').strip("'")}
+                  "description": desc}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in PRIME_PROMPTS.items():
         write(dst / "prompts" / name, content)
@@ -860,6 +1071,22 @@ reviewable diffs.
 
 ## Install
 
+Both harnesses at once (or pick one):
+
+```sh
+./install.sh             # install into prime-agent and opencode
+./install.sh prime       # ~/.prime/agent only
+./install.sh opencode    # ~/.config/opencode only
+
+./uninstall.sh           # same targeting; removes only the files this repo
+                         # ships plus the /setup-pstack artifacts, leaving
+                         # anything you added yourself untouched
+```
+
+Destinations default to `~/.prime/agent` and `~/.config/opencode`; override
+with `PRIME_DST` / `OPENCODE_DST`. Per-harness scripts are below — the
+wrappers just call them.
+
 ### opencode
 
 ```sh
@@ -881,8 +1108,10 @@ Then inside opencode: `/poteto-mode` (or select the `poteto` primary agent).
 
 Then inside prime-agent: `/skill:poteto-mode` (explicit) or describe the task in
 poteto's style; `/poteto` is a prompt template that expands to the same thing.
-`/skill:setup-pstack` writes the `pstack-models` block into
-`~/.prime/agent/AGENTS.md`.
+`/skill:setup-pstack` writes the per-role model table to
+`~/.prime/agent/pstack-models.md` and keeps a pointer block in
+`~/.prime/agent/AGENTS.md` — delete the pointer block (and the file) when you
+do not want pstack model config to apply.
 
 ## What each port contains
 
@@ -890,7 +1119,7 @@ poteto's style; `/poteto` is a prompt template that expands to the same thing.
 |---|---|---|
 | 50 skills (incl. `poteto-mode` + 21 principle leaf skills + playbooks/references) | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
 | `poteto-mode` activation | `/poteto-mode` command or the `poteto` primary agent | `/skill:poteto-mode` or `/poteto` prompt |
-| Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `AGENTS.md` block |
+| Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `pstack-models.md` + pointer block in `AGENTS.md` |
 | Subagent specs | `agents/poteto-agent.md`, `comment-sicko.md` (`mode: subagent`) | `agents/*.md` (spec docs; `no-comments` embeds Comment Sicko as a spawn prompt) |
 | Scripts | `poteto-mode/scripts/` (`watch-pr`, `orch`, `check-plan.mjs`, `worktree-audit.sh`) — verbatim | same |
 
@@ -913,8 +1142,8 @@ port applies.
 | Skill frontmatter `name`/`description` + extras (`icon`, `color`, `reminder`, `disable-model-invocation`, `is_background`, `mode`) | `name`, `description`, `license`, `compatibility`; extras moved to `metadata:` | `name`, `description`; `disable-model-invocation` preserved verbatim (hides from `<available_skills>`, still `/skill:name`-invocable) |
 | `/skillname` slash mention in prose | `the \\`name\\` skill` (except `/poteto-mode`, `/setup-pstack` — shipped as real commands) | `` `/skill:name` `` |
 | `mode: true` on poteto-mode (agent mode) | `agents/poteto.md` with `mode: primary` | not applicable — load the skill; `/poteto` prompt provided |
-| `~/.cursor/rules/pstack-models.mdc` always-applied rule | `~/.config/opencode/pstack-models.md` + `instructions` entry in `opencode.json` | `<!-- pstack-models:start -->` block in `~/.prime/agent/AGENTS.md` |
-| Cursor model slugs (`grok-4.7-xhigh-fast`, `claude-opus-5-5-max`, `gpt-5.6-sol-max`; effort suffixes `-max`/`-xhigh`/`-high`/`-medium`/`-low`, `-fast`) | per-role defaults: fast code `anthropic/claude-haiku-4-5`, judgment/prose `anthropic/claude-opus-4-5`, third panel `openai/gpt-5.1` | same defaults; effort ladder maps to `thinking` levels `off`/`low`/`medium`/`high` on `rlm.spawn` |
+| `~/.cursor/rules/pstack-models.mdc` always-applied rule | `~/.config/opencode/pstack-models.md` + `instructions` entry in `opencode.json` | `~/.prime/agent/pstack-models.md` + pointer block in `AGENTS.md` (delete the block to disable) |
+| Cursor model slugs (`grok-4.7-xhigh-fast`, `claude-opus-5-5-max`, `gpt-5.6-sol-max`; effort suffixes `-max`/`-xhigh`/`-high`/`-medium`/`-low`, `-fast`) | slug-free: every role defaults to `inherit-parent` (omit `model`, run on the parent model). Define per-role `provider/model` slugs once via `/setup-pstack`, which detects `opencode models`. No slug is hard-coded into skill bodies. | same slug-free default; effort ladder maps to `thinking` levels `off`/`low`/`medium`/`high` on `rlm.spawn` when a role sets a real model |
 
 ## Subagents and background work
 
@@ -1061,7 +1290,8 @@ def build_all(src: Path, dst: Path) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--src", help="local pstack checkout (default: fetched cache)")
-    ap.add_argument("--dst", default="/home/ubuntu/pstack-ports")
+    ap.add_argument("--dst", default=str(Path(__file__).resolve().parent),
+                    help="destination repo root (default: directory containing port.py)")
     ap.add_argument("--fetch", action="store_true",
                     help="download upstream pstack at --ref into .upstream/ and build from it")
     ap.add_argument("--ref", default="main", help="upstream ref/tag/sha (default: main)")

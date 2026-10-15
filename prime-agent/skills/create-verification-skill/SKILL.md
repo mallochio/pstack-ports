@@ -1,9 +1,10 @@
 ---
 name: create-verification-skill
-description: "Generate a project-local verification skill that drives your app the\
-  \ way a user does \u2014 any language, framework, or platform. Use for `/skill:create-verification-skill`,\
-  \ \"make a control skill for this repo\", or when a project has no scripted way\
-  \ to prove UI/CLI/service behavior."
+description: "Only use when poteto-mode is active for this task. Generate a project-local\
+  \ verification skill that drives your app the way a user does \u2014 any language,\
+  \ framework, or platform. Use for `/skill:create-verification-skill`, \"make a control\
+  \ skill for this repo\", or when a project has no scripted way to prove UI/CLI/service\
+  \ behavior."
 disable-model-invocation: true
 ---
 

@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Install generator dependencies
+        run: python3 -m pip install pyyaml
+
       - name: Fetch upstream and report drift
         id: drift
         run: |

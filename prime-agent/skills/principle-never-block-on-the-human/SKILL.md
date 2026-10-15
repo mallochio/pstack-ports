@@ -1,6 +1,7 @@
 ---
 name: principle-never-block-on-the-human
-description: Apply when tempted to ask 'should I do X?' on reversible work.
+description: Only use when poteto-mode is active for this task. Apply when tempted
+  to ask 'should I do X?' on reversible work.
 disable-model-invocation: true
 ---
 

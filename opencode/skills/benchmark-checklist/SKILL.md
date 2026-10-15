@@ -1,8 +1,9 @@
 ---
 name: benchmark-checklist
-description: Vet a perf measurement (limiter, tuning, limits, errors, repeatability,
-  relevance, and whether the work happened) before you report or act on it. Use when
-  you run a benchmark or report a speedup or regression you measured.
+description: Only use when poteto-mode is active for this task. Vet a perf measurement
+  (limiter, tuning, limits, errors, repeatability, relevance, and whether the work
+  happened) before you report or act on it. Use when you run a benchmark or report
+  a speedup or regression you measured.
 metadata:
   disable_model_invocation: 'true'
 license: MIT

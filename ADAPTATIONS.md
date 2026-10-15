@@ -10,8 +10,8 @@ port applies.
 | Skill frontmatter `name`/`description` + extras (`icon`, `color`, `reminder`, `disable-model-invocation`, `is_background`, `mode`) | `name`, `description`, `license`, `compatibility`; extras moved to `metadata:` | `name`, `description`; `disable-model-invocation` preserved verbatim (hides from `<available_skills>`, still `/skill:name`-invocable) |
 | `/skillname` slash mention in prose | `the \`name\` skill` (except `/poteto-mode`, `/setup-pstack` — shipped as real commands) | `` `/skill:name` `` |
 | `mode: true` on poteto-mode (agent mode) | `agents/poteto.md` with `mode: primary` | not applicable — load the skill; `/poteto` prompt provided |
-| `~/.cursor/rules/pstack-models.mdc` always-applied rule | `~/.config/opencode/pstack-models.md` + `instructions` entry in `opencode.json` | `<!-- pstack-models:start -->` block in `~/.prime/agent/AGENTS.md` |
-| Cursor model slugs (`grok-4.7-xhigh-fast`, `claude-opus-5-5-max`, `gpt-5.6-sol-max`; effort suffixes `-max`/`-xhigh`/`-high`/`-medium`/`-low`, `-fast`) | per-role defaults: fast code `anthropic/claude-haiku-4-5`, judgment/prose `anthropic/claude-opus-4-5`, third panel `openai/gpt-5.1` | same defaults; effort ladder maps to `thinking` levels `off`/`low`/`medium`/`high` on `rlm.spawn` |
+| `~/.cursor/rules/pstack-models.mdc` always-applied rule | `~/.config/opencode/pstack-models.md` + `instructions` entry in `opencode.json` | `~/.prime/agent/pstack-models.md` + pointer block in `AGENTS.md` (delete the block to disable) |
+| Cursor model slugs (`grok-4.7-xhigh-fast`, `claude-opus-5-5-max`, `gpt-5.6-sol-max`; effort suffixes `-max`/`-xhigh`/`-high`/`-medium`/`-low`, `-fast`) | slug-free: every role defaults to `inherit-parent` (omit `model`, run on the parent model). Define per-role `provider/model` slugs once via `/setup-pstack`, which detects `opencode models`. No slug is hard-coded into skill bodies. | same slug-free default; effort ladder maps to `thinking` levels `off`/`low`/`medium`/`high` on `rlm.spawn` when a role sets a real model |
 
 ## Subagents and background work
 

@@ -38,6 +38,22 @@ reviewable diffs.
 
 ## Install
 
+Both harnesses at once (or pick one):
+
+```sh
+./install.sh             # install into prime-agent and opencode
+./install.sh prime       # ~/.prime/agent only
+./install.sh opencode    # ~/.config/opencode only
+
+./uninstall.sh           # same targeting; removes only the files this repo
+                         # ships plus the /setup-pstack artifacts, leaving
+                         # anything you added yourself untouched
+```
+
+Destinations default to `~/.prime/agent` and `~/.config/opencode`; override
+with `PRIME_DST` / `OPENCODE_DST`. Per-harness scripts are below — the
+wrappers just call them.
+
 ### opencode
 
 ```sh
@@ -59,8 +75,10 @@ Then inside opencode: `/poteto-mode` (or select the `poteto` primary agent).
 
 Then inside prime-agent: `/skill:poteto-mode` (explicit) or describe the task in
 poteto's style; `/poteto` is a prompt template that expands to the same thing.
-`/skill:setup-pstack` writes the `pstack-models` block into
-`~/.prime/agent/AGENTS.md`.
+`/skill:setup-pstack` writes the per-role model table to
+`~/.prime/agent/pstack-models.md` and keeps a pointer block in
+`~/.prime/agent/AGENTS.md` — delete the pointer block (and the file) when you
+do not want pstack model config to apply.
 
 ## What each port contains
 
@@ -68,7 +86,7 @@ poteto's style; `/poteto` is a prompt template that expands to the same thing.
 |---|---|---|
 | 50 skills (incl. `poteto-mode` + 21 principle leaf skills + playbooks/references) | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
 | `poteto-mode` activation | `/poteto-mode` command or the `poteto` primary agent | `/skill:poteto-mode` or `/poteto` prompt |
-| Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `AGENTS.md` block |
+| Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `pstack-models.md` + pointer block in `AGENTS.md` |
 | Subagent specs | `agents/poteto-agent.md`, `comment-sicko.md` (`mode: subagent`) | `agents/*.md` (spec docs; `no-comments` embeds Comment Sicko as a spawn prompt) |
 | Scripts | `poteto-mode/scripts/` (`watch-pr`, `orch`, `check-plan.mjs`, `worktree-audit.sh`) — verbatim | same |
 

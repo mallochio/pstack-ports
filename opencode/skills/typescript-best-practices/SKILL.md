@@ -1,7 +1,7 @@
 ---
 name: typescript-best-practices
-description: TypeScript best practices. Use when reading or editing any .ts or .tsx
-  file.
+description: Only use when poteto-mode is active for this task. TypeScript best practices.
+  Use when reading or editing any .ts or .tsx file.
 metadata:
   disable_model_invocation: 'true'
 license: MIT

@@ -1,7 +1,8 @@
 ---
 name: principle-model-the-domain
-description: Apply when writing stateful logic, or when code branches a lot or repeats
-  a shape assumption across files.
+description: Only use when poteto-mode is active for this task. Apply when writing
+  stateful logic, or when code branches a lot or repeats a shape assumption across
+  files.
 disable-model-invocation: true
 ---
 

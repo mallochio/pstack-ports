@@ -20,7 +20,7 @@ Run `opencode models` and read the `provider/model` slugs the user has configure
 
 ### 2. Load current state
 
-The default role-to-model mapping is the table shown in step 5 below. If `~/.config/opencode/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
+Every role defaults to `inherit-parent` (omit `model`, run on the parent model), so the file works with zero hard-coded slugs. If `~/.config/opencode/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from all-`inherit-parent`. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
 
 ### 3. Budget, map, and confirm
 
@@ -31,7 +31,7 @@ The default role-to-model mapping is the table shown in step 5 below. If `~/.con
 - `medium — mid-tier slugs`
 - `small — cheapest slugs`
 
-**(b) Apply it.** Effort tokens don't exist in `provider/model` slugs, so budget moves between model tiers instead: keep each role's configured family but swap the member (for example `anthropic/claude-haiku-4-5` → `anthropic/claude-sonnet-4-5` → `anthropic/claude-opus-4-5` as budget rises). `inherit-parent` and `auto` do not change. If the result is not a detected slug, use the same family's detected slug nearest the target tier, else mark the role as needing a choice.
+**(b) Apply it.** Budget moves between model tiers instead of effort tokens: keep each role's configured family but swap the member (for example fast-tier → mid-tier → strongest-tier as budget rises). `inherit-parent` and `auto` do not change. If the result is not a detected slug, use the same family's detected slug nearest the target tier, else mark the role as needing a choice.
 
 **(c) Show the roles and confirm.** Show every role with its model, marking any real slug not in the detected set as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected models plus `inherit-parent` and `auto` (both mean: this role runs on the parent agent's model — opencode subagents inherit the invoking agent's model when `model` is omitted). For panel roles (arena runners, architect runners, interrogate reviewers) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model family differs from the parent's when possible. `swarm workers` is the default model for every worker unless a race or comparison assigns another model per arm.
 
@@ -44,26 +44,26 @@ Every real slug written must be in the detected set. `inherit-parent` and `auto`
 Write `~/.config/opencode/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Then ensure `~/.config/opencode/opencode.json` contains `"~/.config/opencode/pstack-models.md"`-equivalent entry in its `instructions` array (add the file's absolute path if missing; leave any existing entries intact). Shape:
 
 ```
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
+# pstack model configuration. One line per role. Delete a line to fall back to the skill default (inherit-parent).
 # `inherit-parent` or `auto` as a value: the role runs on the parent model (omit the task `model`). Alias entries in a panel list still count toward its fan-out.
 # budget: unlimited
-feature, refactoring: anthropic/claude-haiku-4-5
-bug-fix: anthropic/claude-haiku-4-5
-perf-issue: anthropic/claude-haiku-4-5
-hillclimb: anthropic/claude-haiku-4-5
-judgment and prose: anthropic/claude-opus-4-5
-hardest tasks: anthropic/claude-opus-4-5
-how explorer: anthropic/claude-haiku-4-5
-how explainer: anthropic/claude-opus-4-5
-why investigators: anthropic/claude-haiku-4-5
-why synthesizer: anthropic/claude-opus-4-5
-reflect tooling: openai/gpt-5.1
-reflect judgment, divergent, synthesizer: anthropic/claude-opus-4-5
-arena runners: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-arena cross-judge pool: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-swarm workers: anthropic/claude-haiku-4-5
-architect runners: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-interrogate reviewers: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
+feature, refactoring: inherit-parent
+bug-fix: inherit-parent
+perf-issue: inherit-parent
+hillclimb: inherit-parent
+judgment and prose: inherit-parent
+hardest tasks: inherit-parent
+how explorer: inherit-parent
+how explainer: inherit-parent
+why investigators: inherit-parent
+why synthesizer: inherit-parent
+reflect tooling: inherit-parent
+reflect judgment, divergent, synthesizer: inherit-parent
+arena runners: inherit-parent
+arena cross-judge pool: inherit-parent
+swarm workers: inherit-parent
+architect runners: inherit-parent
+interrogate reviewers: inherit-parent
 ```
 
 ### 6. Confirm

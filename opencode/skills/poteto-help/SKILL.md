@@ -28,7 +28,7 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `~/.config/opencode/pstack-models.md` means `/setup-pstack` hasn't run for this user, so every role uses its default model.
+- No `pstack-models.md` means `/setup-pstack` hasn't run for this user, so every role uses its default model.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention the `create-verification-skill` skill when the question is about proving a change works.
 
 When the model rule is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
@@ -46,7 +46,7 @@ Installing changes nothing until the user invokes a skill. Only `/setup-pstack` 
 
 If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Rerun `/setup-pstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on Auto or a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
 
-pstack is built for Cursor. Its skills use the Agent Skills format, so other tools can read them. But most workflow skills, including `/poteto-mode`, the `how` skill, the `why` skill, and the `teach` skill, spawn Cursor subagents with per-role models, and Custom Modes and a periodic wake are Cursor features, so those parts may not work there.
+pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto opencode (the `task` tool, `pstack-models.md`, background watchers), so the workflow skills work here. Custom Modes remain Cursor-only — start each task with `/poteto-mode`.
 
 ## Start a task with `/poteto-mode`
 
@@ -111,7 +111,7 @@ Close calls:
 Not in pstack:
 
 - the `deslop` skill, `control-cli`, and `control-ui` ship in the the upstream Cursor plugin plugin.
-- a periodic wake and the `create-skill` skill are Cursor built-ins.
+- a periodic wake and `/authoring-a-skill` are Cursor built-ins.
 - pstack has no `/orchestrate` skill. Orchestrate is a `/poteto-mode` playbook. If the slash menu shows `/orchestrate`, another plugin provides it.
 
 ## Playbooks and principles
@@ -150,7 +150,7 @@ For a run that drifts, [`references/prompting.md`](references/prompting.md) has 
 
 - [the `automate-me` skill](../automate-me/SKILL.md) drafts a personal mode skill from the user's own history, to use alongside `/poteto-mode`.
 - [the `reflect` skill](../reflect/SKILL.md) after a session turns its lessons into skill edits the user approves.
-- `/poteto-mode` write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
+- `/poteto-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
 - Fix a misbehaving skill in its own PR, not inside the feature work where it went wrong.
 
 [Guide page 9](../../docs/guide/09-make-it-yours.md) covers each of these.

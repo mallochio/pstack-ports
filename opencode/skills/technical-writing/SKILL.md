@@ -1,9 +1,9 @@
 ---
 name: technical-writing
-description: "Layered technical-writing standard: Di\xE1taxis structure, Google developer\
-  \ style sentences, STE instruction rules, Global English syntax. Use for the `technical-writing`\
-  \ skill or when writing or reviewing docs, RFCs, readmes, PR descriptions, or commit\
-  \ messages."
+description: "Only use when poteto-mode is active for this task. Layered technical-writing\
+  \ standard: Di\xE1taxis structure, Google developer style sentences, STE instruction\
+  \ rules, Global English syntax. Use for the `technical-writing` skill or when writing\
+  \ or reviewing docs, RFCs, readmes, PR descriptions, or commit messages."
 metadata:
   disable_model_invocation: 'true'
 license: MIT

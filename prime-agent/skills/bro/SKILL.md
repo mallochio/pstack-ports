@@ -1,6 +1,7 @@
 ---
 name: bro
-description: Restate the last message in plain human language, with no jargon.
+description: Only use when poteto-mode is active for this task. Restate the last message
+  in plain human language, with no jargon.
 disable-model-invocation: true
 ---
 

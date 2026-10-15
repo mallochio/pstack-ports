@@ -8,7 +8,7 @@ description: Configure which models pstack uses per role and at what reasoning b
 
 # Setup pstack (prime-agent)
 
-Maintain the `pstack-models` block inside `~/.prime/agent/AGENTS.md`, the model-role table pstack skills read. The block is delimited by `<!-- pstack-models:start -->` and `<!-- pstack-models:end -->`; AGENTS.md content outside it is never touched.
+Write `~/.prime/agent/pstack-models.md`, the model-role table pstack skills read, and keep a pointer block in `~/.prime/agent/AGENTS.md` so the file stays discoverable. The pointer block is delimited by `<!-- pstack:start -->` and `<!-- pstack:end -->`; AGENTS.md content outside it is never touched. To stop applying pstack models, delete the pointer block (and the file if you no longer want it).
 
 ## Steps
 
@@ -18,11 +18,11 @@ From the kernel, call `await rlm.find_models()` (optionally with a query per fam
 
 ### 2. Load current state
 
-The default role-to-model mapping is the table shown in step 5 below. If an existing `pstack-models` block is present in `~/.prime/agent/AGENTS.md`, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
+Every role defaults to `inherit-parent` (omit `model`, run on the parent model), so the file works with zero hard-coded slugs. If `~/.prime/agent/pstack-models.md` already exists, read it and treat its `# budget` line and its role values as the current choices. If only a legacy `pstack-models` block (`<!-- pstack-models:start -->` … `<!-- pstack-models:end -->`) exists inside `~/.prime/agent/AGENTS.md`, migrate its values into the new file. Otherwise start from all-`inherit-parent`. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
 
 ### 3. Budget, map, and confirm
 
-**(a) Ask for a budget.** Prefer a structured choice prompt over free text. Offer these four options with these exact labels, and name the current budget when the block records one.
+**(a) Ask for a budget.** Prefer a structured choice prompt over free text. Offer these four options with these exact labels, and name the current budget when the file records one.
 
 - `unlimited — thinking=high`
 - `large — thinking=high, medium where a role tolerates it`
@@ -37,39 +37,45 @@ The default role-to-model mapping is the table shown in step 5 below. If an exis
 
 Every real slug written must be in the detected set. `inherit-parent` and `auto` always pass. If a chosen real slug is not available, stop and ask again.
 
-### 5. Write the block
+### 5. Write the file and pointer
 
-Write or replace the managed block in `~/.prime/agent/AGENTS.md` (create the file if absent). Keep content outside the markers byte-identical. Shape:
+Write `~/.prime/agent/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Shape:
 
 ```
-<!-- pstack-models:start -->
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
+# pstack model configuration. One line per role. Delete a line to fall back to the skill default (inherit-parent).
 # `inherit-parent` or `auto` as a value: omit `model` on rlm.spawn so the child runs on the parent model. Alias entries in a panel list still count toward its fan-out.
 # A value may append `; thinking=<level>` to set the spawn's reasoning level (`off|low|medium|high`).
 # budget: unlimited (thinking=high)
-feature, refactoring: anthropic/claude-haiku-4-5
-bug-fix: anthropic/claude-haiku-4-5
-perf-issue: anthropic/claude-haiku-4-5
-hillclimb: anthropic/claude-haiku-4-5
-judgment and prose: anthropic/claude-opus-4-5; thinking=high
-hardest tasks: anthropic/claude-opus-4-5; thinking=high
-how explorer: anthropic/claude-haiku-4-5
-how explainer: anthropic/claude-opus-4-5
-why investigators: anthropic/claude-haiku-4-5
-why synthesizer: anthropic/claude-opus-4-5
-reflect tooling: openai/gpt-5.1
-reflect judgment, divergent, synthesizer: anthropic/claude-opus-4-5
-arena runners: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-arena cross-judge pool: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-swarm workers: anthropic/claude-haiku-4-5
-architect runners: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-interrogate reviewers: anthropic/claude-opus-4-5, openai/gpt-5.1, anthropic/claude-haiku-4-5
-<!-- pstack-models:end -->
+feature, refactoring: inherit-parent
+bug-fix: inherit-parent
+perf-issue: inherit-parent
+hillclimb: inherit-parent
+judgment and prose: inherit-parent
+hardest tasks: inherit-parent
+how explorer: inherit-parent
+how explainer: inherit-parent
+why investigators: inherit-parent
+why synthesizer: inherit-parent
+reflect tooling: inherit-parent
+reflect judgment, divergent, synthesizer: inherit-parent
+arena runners: inherit-parent
+arena cross-judge pool: inherit-parent
+swarm workers: inherit-parent
+architect runners: inherit-parent
+interrogate reviewers: inherit-parent
+```
+
+Then ensure `~/.prime/agent/AGENTS.md` contains the pointer block (create AGENTS.md if absent). If a legacy `<!-- pstack-models:start -->` block is present, delete it and keep a single `<!-- pstack:start -->` block. Keep content outside the markers byte-identical. Pointer shape:
+
+```
+<!-- pstack:start -->
+pstack per-role models live in `pstack-models.md` in this directory (written by `/skill:setup-pstack`). Remove this block (and the file) to stop applying them.
+<!-- pstack:end -->
 ```
 
 ### 6. Confirm
 
-Tell the user the block was written and that it applies to new sessions. Re-running this skill updates it.
+Tell the user the file was written and that it applies to new sessions. Re-running this skill updates it. Mention that deleting the pointer block disables pstack model config without touching the rest of AGENTS.md.
 
 ### 7. Offer a verification skill (optional)
 

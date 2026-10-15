@@ -8,7 +8,7 @@
 # Removes only the entries this repo installs — the skills/, agents/, and
 # prompts/ (prime) or commands/ (opencode) names present in the port tree —
 # plus the artifacts /setup-pstack writes:
-#   prime:    the pstack-models block in AGENTS.md (agent dir and its parent)
+#   prime:    pstack-models.md and the pstack pointer block in AGENTS.md
 #   opencode: pstack-models.md and its entry in opencode.json `instructions`
 # Anything you added yourself under those dirs is left alone.
 #
@@ -33,13 +33,15 @@ remove_tree_entries() {
   done
 }
 
-# Delete the <!-- pstack-models:start --> ... :end --> block from $1.
+# Delete both the current <!-- pstack:start --> ... :end --> pointer block
+# and the legacy <!-- pstack-models:start --> ... :end --> block from $1.
 # Removes the file entirely if the block was all it contained.
 strip_models_block() {
   local f="$1" tmp
-  { [ -f "$f" ] && grep -q 'pstack-models:start' "$f"; } || return 0
+  { [ -f "$f" ] && grep -Eq 'pstack(-models)?:start' "$f"; } || return 0
   tmp="$f.pstack-uninstall"
-  sed '/<!-- pstack-models:start -->/,/<!-- pstack-models:end -->/d' "$f" > "$tmp"
+  sed -e '/<!-- pstack:start -->/,/<!-- pstack:end -->/d' \
+      -e '/<!-- pstack-models:start -->/,/<!-- pstack-models:end -->/d' "$f" > "$tmp"
   if [ -z "$(tr -d '[:space:]' < "$tmp")" ]; then
     rm -f "$tmp" "$f"
   else
@@ -52,6 +54,7 @@ uninstall_prime() {
   remove_tree_entries "$src/skills"  "$dst/skills"
   remove_tree_entries "$src/agents"  "$dst/agents"
   remove_tree_entries "$src/prompts" "$dst/prompts"
+  rm -f "$dst/pstack-models.md"
   strip_models_block "$dst/AGENTS.md"
   strip_models_block "$(dirname "$dst")/AGENTS.md"
   if [ -f "$dst/settings.json" ] && grep -q pstack "$dst/settings.json"; then
