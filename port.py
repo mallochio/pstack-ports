@@ -38,6 +38,15 @@ try:
 except ModuleNotFoundError:
     sys.exit("port.py needs pyyaml: uv run --with pyyaml python3 port.py ...")
 
+WARNINGS: list[str] = []
+
+
+def warn(msg: str) -> None:
+    """Print a build warning and remember it so --strict can fail the run."""
+    WARNINGS.append(msg)
+    print(f"warning: {msg}", file=sys.stderr)
+
+
 UPSTREAM_REPO = "cursor/plugins"
 UPSTREAM_SUBDIR = "pstack"
 
@@ -653,7 +662,7 @@ def check_persistent_rewrites(src: Path) -> None:
     corpus = "\n".join(p.read_text(encoding="utf-8") for p in (src / "skills").rglob("*.md"))
     for pat, _ in PERSISTENT_PLAYBOOK_REWRITES:
         if not re.search(pat, corpus):
-            print(f"warning: persistent-subagent rewrite matched nothing: {pat}", file=sys.stderr)
+            warn(f"persistent-subagent rewrite matched nothing: {pat}")
 
 # Inserted before "## Non-negotiables": the visible per-turn contract. The
 # triggers below it say what to load; this says when, and makes skipping show.
@@ -949,7 +958,7 @@ def rewrite_poteto_mode(body: str, target: str) -> str:
     if m:
         body = body[:m.start()] + "## Subagents\n\n" + repl + "\n\n" + body[m.end():]
     else:
-        print("warning: '## Subagents' heading not found in poteto-mode; appending", file=sys.stderr)
+        warn("'## Subagents' heading not found in poteto-mode; appending")
         body = body.rstrip() + "\n\n## Subagents\n\n" + repl + "\n"
     if "## Non-negotiables" in body:
         every_turn = EVERY_TURN
@@ -960,7 +969,7 @@ def rewrite_poteto_mode(body: str, target: str) -> str:
             )
         body = body.replace("## Non-negotiables", every_turn + "## Non-negotiables", 1)
     else:
-        print("warning: '## Non-negotiables' not found in poteto-mode; prepending Every turn", file=sys.stderr)
+        warn("'## Non-negotiables' not found in poteto-mode; prepending Every turn")
         body = EVERY_TURN + body
     # append harness notes at end
     body = body.rstrip() + "\n\n" + HARNESS_NOTE[target] + "\n"
@@ -1366,6 +1375,12 @@ def build_all(src: Path, dst: Path) -> None:
             print(f"applied {n} override(s) to {target}/")
 
 
+def fail_if_strict(strict: bool) -> None:
+    """Exit 1 when --strict is set and the build printed warnings."""
+    if strict and WARNINGS:
+        sys.exit(f"{len(WARNINGS)} warning(s); a local rewrite no longer matches upstream")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--src", help="local pstack checkout (default: fetched cache)")
@@ -1374,6 +1389,8 @@ def main() -> None:
     ap.add_argument("--fetch", action="store_true",
                     help="download upstream pstack at --ref into .upstream/ and build from it")
     ap.add_argument("--ref", default="main", help="upstream ref/tag/sha (default: main)")
+    ap.add_argument("--strict", action="store_true",
+                    help="exit 1 if any warning was printed (an upstream rewording broke a local rewrite)")
     ap.add_argument("--check", action="store_true",
                     help="regenerate to a temp dir and print a drift report (no writes)")
     args = ap.parse_args()
@@ -1400,12 +1417,14 @@ def main() -> None:
         with tempfile.TemporaryDirectory() as tmp:
             build_all(src, Path(tmp))
             print(drift_report(Path(tmp), dst))
+        fail_if_strict(args.strict)
         return
 
     build_all(src, dst)
     if src_desc:
         write_stamp(dst, src_desc)
     print("wrote", dst)
+    fail_if_strict(args.strict)
 
 
 if __name__ == "__main__":

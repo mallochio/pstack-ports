@@ -28,7 +28,7 @@ jobs:
         run: |
           # --fetch populates .upstream/; --check diffs the regenerated
           # output against the committed tree (nothing written).
-          python3 port.py --fetch --check > drift.txt
+          python3 port.py --fetch --check --strict > drift.txt
           cat drift.txt
           {
             echo 'report<<EOF'
@@ -37,7 +37,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Rebuild ports from fetched upstream
-        run: python3 port.py   # reuses the .upstream/ cache, no re-download
+        run: python3 port.py --strict   # reuses the .upstream/ cache, no re-download
 
       - name: Create or update sync PR
         uses: peter-evans/create-pull-request@v7
