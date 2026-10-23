@@ -49,7 +49,7 @@ Each unit is an experiment. State the hypothesis, make the smallest change, meas
 
 ## Phase D: Keep the audit trail
 
-Log the run via the **show-me-your-work** skill. figure-it-out's work is usually ambitious enough to commit the trail so the reviewer can read it in the PR. The trail plus the diff is what lets the human come back and trust the work.
+Log the run via the **show-me-your-work** skill. Keep the trail outside the project and offer to commit it if the reviewer needs it. The trail plus the diff is what lets the human come back and trust the work.
 
 ## Phase E: Verify and hand back
 

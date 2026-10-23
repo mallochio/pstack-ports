@@ -50,9 +50,9 @@ A run is one agent conversation, including its later turns and any summary of it
 
 ## Where it lives
 
-By default the log is a working artifact, not committed. Keep it at `decisions.tsv` in the work dir, or `.audit/<task-slug>.tsv` when several efforts run at once, and leave it out of git.
+By default the log is a working artifact, not committed. Keep it at `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/decisions.tsv`, outside the project, and say its path in the reply.
 
-Commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result.
+Copy it into the project or commit it only when the user asks.
 
 ## Rules
 

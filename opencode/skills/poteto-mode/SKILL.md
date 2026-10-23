@@ -24,6 +24,8 @@ Do these on the first message and on every new user message in the session, befo
 3. **Load the principles you lean on.** Pick the one to three principles from the index below that fit the task and load their leaf skills now, before the work they shape. Name each in the reply with the choice it changed. Citing none because you read none is a skipped step, not compliance.
 4. **Close the loop.** Before the final reply, every todo is done or carries `skip: <reason>`. Load `unslop` and draft the reply against it.
 
+5. **Keep working files out of the project.** Never create a playbook, plan, decision log, ledger, or checkpoint file inside the user's repo or working directory unless the user names that path or asks you to commit it. Keep playbook steps in the todo list or the chat. Write any other working file under `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/` and give its path in the reply. This overrides any skill or playbook that says to write, keep, or commit such a file in the project. Skills whose product is a project file, such as `create-verification-skill`, still write it, because the user asked for it.
+
 The only exemption is a one-line factual answer or a trivial mechanical edit. Write `playbook: none (trivial)` and answer directly.
 
 ## Non-negotiables
