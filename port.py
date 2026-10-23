@@ -33,6 +33,11 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
+try:
+    import yaml
+except ModuleNotFoundError:
+    sys.exit("port.py needs pyyaml: uv run --with pyyaml python3 port.py ...")
+
 UPSTREAM_REPO = "cursor/plugins"
 UPSTREAM_SUBDIR = "pstack"
 
@@ -112,6 +117,8 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
     task_sub = "an `rlm.spawn` child" if is_prime else "a Task subagent"
 
     rules: list[tuple[str, str]] = [
+        AGENT_DESC_PERSISTENT,
+        *PERSISTENT_PLAYBOOK_REWRITES,
         # ---- model config file -------------------------------------------------
         # Both harnesses use a standalone file. Prime keeps only a pointer
         # block in AGENTS.md so pstack stays removable without touching the
@@ -544,12 +551,10 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
     m = FM_RE.match(text)
     if not m:
         return {}, text
-    import yaml  # deferred; pyyaml is on the box
     return yaml.safe_load(m.group(1)), text[m.end():]
 
 
 def dump_frontmatter(fm: dict) -> str:
-    import yaml
     return "---\n" + yaml.safe_dump(fm, sort_keys=False, default_flow_style=False).strip() + "\n---\n"
 
 
@@ -605,13 +610,65 @@ def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
 # poteto-mode SKILL.md targeted rewrites
 # ---------------------------------------------------------------------------
 
+# Local policy: one persistent subagent per workstream, replacing upstream's
+# "fresh subagents by default".
+PERSISTENT_SUBAGENTS_OC = """**Persistent subagents per workstream.** Keep one subagent conversation per ongoing workstream, such as a PR, a feature, or an investigation thread. Record each one's role, workstream, and returned session ID in your todo list. For related follow-up work (a fix round, a follow-up question, a retry after an interruption, the next round of the same reviewer), continue that exact subagent by passing its session ID. Send it the new request plus every directive and change since its last turn. It has not seen the parent conversation. Start a fresh subagent only for unrelated work, for an independent review or second opinion (a clean context is the point), or when the session cannot be resumed. If a resume fails, say so in the reply instead of silently starting fresh. A stop or hold order to a running agent is not a new workstream. Never trust a "done" summary. Review the diff or artifact yourself."""
+
+PERSISTENT_SUBAGENTS_PRIME = """**Persistent subagents per workstream.** Keep one child per ongoing workstream, such as a PR, a feature, or an investigation thread. Give it a stable `name=` and record its role and workstream in your todo list. For related follow-up work (a fix round, a follow-up question, a retry after an interruption, the next round of the same reviewer), message that exact child with `agent_message.send`, or use a resident session (`rlm.create_session`) for work that spans many turns. Send it the new request plus every directive and change since its last turn. It has not seen the parent conversation. Spawn a fresh child only for unrelated work, for an independent review or second opinion (a clean context is the point), or when the child cannot be reached. If messaging fails, say so in the reply instead of silently starting fresh. A stop or hold order to a running child is not a new workstream. Never trust a "done" summary. Review the diff or artifact yourself."""
+
+AGENT_DESC_PERSISTENT = (
+    r"Spawn a fresh `poteto-agent` for each new task, and resume one only in the\s+"
+    r"strict cases that poteto-mode's Subagents section names\.",
+    "Keep one `poteto-agent` per workstream and continue it for related follow-ups, "
+    "as poteto-mode's Subagents section describes.",
+)
+
+# Upstream playbook lines that prescribe respawning where the persistent
+# policy continues the same subagent. Exact-text regexes; a miss is reported
+# by check_persistent_rewrites() so an upstream rewording cannot slip by.
+PERSISTENT_PLAYBOOK_REWRITES = [
+    (r"Spawn a fresh owner rather than chaining interrupts\.",
+     "Keep the same owner across rounds and send it every directive since its last turn, "
+     "rather than chaining interrupts."),
+    (r"Never resume-chain a brief\. Respawn fresh with consolidated scope\.",
+     "Continue the same worker for a related round, sending it the consolidated scope "
+     "(the brief plus every directive since its last turn). Respawn fresh only when it cannot be resumed."),
+    (r"`verifier-blocked` is not a pass\. Respawn when the environment heals\.",
+     "`verifier-blocked` is not a pass. Continue the same verifier when the environment heals."),
+    (r"and respawn that worker once\.",
+     "and send that worker one correction request in its existing session."),
+]
+
+
+def check_persistent_rewrites(src: Path) -> None:
+    """Warn when an upstream line targeted by PERSISTENT_PLAYBOOK_REWRITES no longer exists."""
+    corpus = "\n".join(p.read_text(encoding="utf-8") for p in (src / "skills").rglob("*.md"))
+    for pat, _ in PERSISTENT_PLAYBOOK_REWRITES:
+        if not re.search(pat, corpus):
+            print(f"warning: persistent-subagent rewrite matched nothing: {pat}", file=sys.stderr)
+
+# Inserted before "## Non-negotiables": the visible per-turn contract. The
+# triggers below it say what to load; this says when, and makes skipping show.
+EVERY_TURN = """## Every turn
+
+Do these on the first message and on every new user message in the session, before other work. Follow-up turns are where this mode decays.
+
+1. **Name the playbook.** Write `playbook: <name>` at the top of your reply, then copy its numbered steps into the todo list verbatim. With no todo tool, put the steps as a checklist in your first message. A step you skip stays listed as `skip: <reason>`.
+2. **Load each routed skill in this turn.** When a step or trigger names a skill (`how`, `why`, `architect`, `interrogate`, `swarm`, `figure-it-out`), call the skill tool for it now. Do not substitute a generic subagent or your memory of the skill. The skill sets the subagent mix and the output shape, so skipping it skips both.
+3. **Load the principles you lean on.** Pick the one to three principles from the index below that fit the task and load their leaf skills now, before the work they shape. Name each in the reply with the choice it changed. Citing none because you read none is a skipped step, not compliance.
+4. **Close the loop.** Before the final reply, every todo is done or carries `skip: <reason>`. Load `unslop` and draft the reply against it.
+
+The only exemption is a one-line factual answer or a trivial mechanical edit. Write `playbook: none (trivial)` and answer directly.
+
+"""
+
 POTETO_SUBAGENTS_OC = """**Spawn the `poteto-agent` subagent for any delegate you launch inside a playbook step** (code-writing delegates, ad-hoc helpers): it is installed as a `mode: subagent` agent, so a `task` call with subagent type `poteto-agent` gets the full style. `/poteto-mode` and `poteto-agent` route through the same body of rules. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own subagent mix for diverse-model review; respect what the skill prescribes, don't override to `poteto-agent`.
 
 **Defaults for every `task` call.** Prefer parallel spawns: launch independent delegates in one message and keep the main thread on summaries. Pass file pointers, not inlined context. Omit `model` unless a role line in `pstack-models.md` sets one — the default for every role is `inherit-parent`, so delegates run on the parent model out of the box with zero hard-coded slugs. Define per-role models once via `/setup-pstack` (it detects your `opencode models` slugs and writes them into `pstack-models.md`); a role with no line keeps `inherit-parent`, and `auto` is an alias for it. Code delegates tier by difficulty only when roles are configured: the hardest changes go to your strongest judgment model, trivial edits to the fast model. Per-role lines override the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-**Fresh subagents by default.** Give new work to a fresh subagent with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Resume or message an existing subagent only when the new work strictly needs state that lives in that agent and is costly to move: its local checkout, its uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running agent is not reuse. A role such as a PR owner outlives its agent. Once that agent returns, a fresh agent takes the role's next round. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary."""
+""" + PERSISTENT_SUBAGENTS_OC
 
 POTETO_SUBAGENTS_PRIME = """**Spawn every delegate inside a playbook step as an `rlm.spawn` child whose prompt opens with the poteto-agent spec**: `You are operating as poteto-mode's full agent style. Read the poteto-mode skill's SKILL.md in full before doing any work, including its inline Principles index. Navigate to a leaf principle-* skill whenever you apply that principle.` The same paragraph is kept at `agents/poteto-agent.md` in this package. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own model mix for diverse-model review; respect what the skill prescribes.
 
@@ -619,7 +676,7 @@ POTETO_SUBAGENTS_PRIME = """**Spawn every delegate inside a playbook step as an 
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-**Fresh subagents by default.** Give new work to a fresh `rlm.spawn` child with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Message an existing child (`agent_message.send`) only when the new work strictly needs state that lives in that child and is costly to move: its checkout, uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running child is not reuse. A role such as a PR owner outlives its child. Once that child returns, a fresh child takes the role's next round. Resumed children silently drop directives, so fire a fresh child with consolidated scope rather than trusting a "done" summary."""
+""" + PERSISTENT_SUBAGENTS_PRIME
 
 # Additional poteto-mode body tweaks per target (list of (old, {oc, prime})).
 POTETO_EDITS = [
@@ -634,7 +691,7 @@ HARNESS_NOTE = {
     "opencode": (
         "## Harness notes (opencode port)\n\n"
         "- Skills load on demand through the `skill` tool; `/poteto-mode` and `/setup-pstack` are real commands installed by this port. Other `/name` mentions in the ported text mean \"load the `name` skill\".\n"
-        "- Subagents run through the `task` tool; `poteto-agent` and `comment-sicko` are installed as `mode: subagent` agents, and `poteto` is installed as a `mode: primary` agent you can Tab to.\n"
+        "- Subagents run through the harness's subagent tool (`task` in stock opencode; some hosts name it `subagent`). Its returned session ID is what you pass to continue a persistent subagent. `poteto-agent` and `comment-sicko` are installed as `mode: subagent` agents, and `poteto` is installed as a `mode: primary` agent you can Tab to.\n"
         "- The model role table lives at `~/.config/opencode/pstack-models.md` (registered in `opencode.json` `instructions`); `/setup-pstack` writes it.\n"
         "- Models are slug-free by default: every role is `inherit-parent` (omit `model`) until you assign `provider/model` slugs via `/setup-pstack`. Skills never hard-code a model slug.\n"
         "- `Bugbot` means the forge's automated PR reviewer — whatever bot posts review comments on your PRs (Bugbot on Cursor; Copilot review, Devin Review, or a CI bot elsewhere). Triage it skeptically per `references/bugbot-triage.md`.\n"
@@ -884,6 +941,17 @@ def rewrite_poteto_mode(body: str, target: str) -> str:
     else:
         print("warning: '## Subagents' heading not found in poteto-mode; appending", file=sys.stderr)
         body = body.rstrip() + "\n\n## Subagents\n\n" + repl + "\n"
+    if "## Non-negotiables" in body:
+        every_turn = EVERY_TURN
+        if target == "prime-agent":
+            every_turn = every_turn.replace(
+                "call the skill tool for it now",
+                "load it now with `/skill:<name>`, or read its installed `SKILL.md` when you cannot invoke it",
+            )
+        body = body.replace("## Non-negotiables", every_turn + "## Non-negotiables", 1)
+    else:
+        print("warning: '## Non-negotiables' not found in poteto-mode; prepending Every turn", file=sys.stderr)
+        body = EVERY_TURN + body
     # append harness notes at end
     body = body.rstrip() + "\n\n" + HARNESS_NOTE[target] + "\n"
     return body
@@ -926,7 +994,7 @@ description: poteto's agent style — playbook-routed rigorous engineering from 
 mode: primary
 ---
 
-You are in poteto mode. At the start of every task, load the `poteto-mode` skill in full — including its inline Principles index — then match the task to a playbook and copy its steps into your task list verbatim. All poteto-mode rules apply for the whole session: deliberate subagents, unslopped prose, simple code, verified work.
+You are in poteto mode. At the start of every task, load the `poteto-mode` skill in full — including its inline Principles index — then follow its "Every turn" section: name the playbook and copy its steps into your task list verbatim, load the routed skills and principles it names, and close every step before the reply. Repeat this on every new user message, not only the first. All poteto-mode rules apply for the whole session: deliberate subagents, unslopped prose, simple code, verified work.
 """,
 }
 
@@ -1276,6 +1344,7 @@ def drift_report(new_root: Path, old_root: Path) -> str:
 def build_all(src: Path, dst: Path) -> None:
     global ACTIVE_SKILLS
     ACTIVE_SKILLS = {d.name for d in (src / "skills").iterdir() if d.is_dir()}
+    check_persistent_rewrites(src)
     build_opencode(src, dst / "opencode")
     build_prime(src, dst / "prime-agent")
     build_extras(src, dst / "extras")

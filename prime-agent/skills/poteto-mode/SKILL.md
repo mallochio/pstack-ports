@@ -10,6 +10,17 @@ disable-model-invocation: true
 
 Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `poteto-agent` prompt.
 
+## Every turn
+
+Do these on the first message and on every new user message in the session, before other work. Follow-up turns are where this mode decays.
+
+1. **Name the playbook.** Write `playbook: <name>` at the top of your reply, then copy its numbered steps into the todo list verbatim. With no todo tool, put the steps as a checklist in your first message. A step you skip stays listed as `skip: <reason>`.
+2. **Load each routed skill in this turn.** When a step or trigger names a skill (`how`, `why`, `architect`, `interrogate`, `swarm`, `figure-it-out`), load it now with `/skill:<name>`, or read its installed `SKILL.md` when you cannot invoke it. Do not substitute a generic subagent or your memory of the skill. The skill sets the subagent mix and the output shape, so skipping it skips both.
+3. **Load the principles you lean on.** Pick the one to three principles from the index below that fit the task and load their leaf skills now, before the work they shape. Name each in the reply with the choice it changed. Citing none because you read none is a skipped step, not compliance.
+4. **Close the loop.** Before the final reply, every todo is done or carries `skip: <reason>`. Load `unslop` and draft the reply against it.
+
+The only exemption is a one-line factual answer or a trivial mechanical edit. Write `playbook: none (trivial)` and answer directly.
+
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
@@ -96,7 +107,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-**Fresh subagents by default.** Give new work to a fresh `rlm.spawn` child with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Message an existing child (`agent_message.send`) only when the new work strictly needs state that lives in that child and is costly to move: its checkout, uncommitted changes, or a process it still runs, such as a dev server or a babysit watcher. A stop or hold order to a running child is not reuse. A role such as a PR owner outlives its child. Once that child returns, a fresh child takes the role's next round. Resumed children silently drop directives, so fire a fresh child with consolidated scope rather than trusting a "done" summary.
+**Persistent subagents per workstream.** Keep one child per ongoing workstream, such as a PR, a feature, or an investigation thread. Give it a stable `name=` and record its role and workstream in your todo list. For related follow-up work (a fix round, a follow-up question, a retry after an interruption, the next round of the same reviewer), message that exact child with `agent_message.send`, or use a resident session (`rlm.create_session`) for work that spans many turns. Send it the new request plus every directive and change since its last turn. It has not seen the parent conversation. Spawn a fresh child only for unrelated work, for an independent review or second opinion (a clean context is the point), or when the child cannot be reached. If messaging fails, say so in the reply instead of silently starting fresh. A stop or hold order to a running child is not a new workstream. Never trust a "done" summary. Review the diff or artifact yourself.
 
 ## Writing the reply
 
