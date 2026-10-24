@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import sys
@@ -1313,12 +1314,7 @@ OC_INSTALL = """#!/usr/bin/env bash
 set -euo pipefail
 DST="${1:-$HOME/.config/opencode}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-mkdir -p "$DST/skills" "$DST/agents" "$DST/commands"
-cp -R "$SRC/skills/." "$DST/skills/"
-cp "$SRC/agents/"*.md "$DST/agents/"
-cp "$SRC/commands/"*.md "$DST/commands/"
-echo "Installed pstack skills to $DST/skills, agents to $DST/agents, commands to $DST/commands"
-echo "Optional: run /setup-pstack inside opencode to configure per-role models."
+python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents commands
 """
 
 PRIME_INSTALL = """#!/usr/bin/env bash
@@ -1326,13 +1322,7 @@ PRIME_INSTALL = """#!/usr/bin/env bash
 set -euo pipefail
 DST="${1:-$HOME/.prime/agent}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-mkdir -p "$DST/skills" "$DST/agents" "$DST/prompts"
-cp -R "$SRC/skills/." "$DST/skills/"
-cp "$SRC/agents/"*.md "$DST/agents/"
-cp "$SRC/prompts/"*.md "$DST/prompts/" 2>/dev/null || true
-echo "Installed pstack skills to $DST/skills, agent specs to $DST/agents, prompts to $DST/prompts"
-echo "Alternative: add this directory to the packages array in $DST/settings.json instead of copying."
-echo "Optional: run /skill:setup-pstack inside prime-agent to configure per-role models."
+python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents prompts
 """
 
 OC_AGENTS = {
@@ -1408,6 +1398,9 @@ def build_opencode(src: Path, dst: Path) -> None:
         write(dst / "commands" / name, content)
     write(dst / "install.sh", OC_INSTALL)
     (dst / "install.sh").chmod(0o755)
+    helper = dst / "scripts" / "install_tree.py"
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path(__file__).parent / "scripts" / "install_tree.py", helper)
 
 
 def build_prime(src: Path, dst: Path) -> None:
@@ -1431,6 +1424,9 @@ def build_prime(src: Path, dst: Path) -> None:
     write(dst / "package.json", json.dumps(PRIME_PACKAGE_JSON, indent=2) + "\n")
     write(dst / "install.sh", PRIME_INSTALL)
     (dst / "install.sh").chmod(0o755)
+    helper = dst / "scripts" / "install_tree.py"
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path(__file__).parent / "scripts" / "install_tree.py", helper)
 
 
 def build_extras(src: Path, dst: Path) -> None:
@@ -1464,21 +1460,35 @@ See `ADAPTATIONS.md` for the Cursor → harness mapping table.
 ## Keeping in sync with upstream
 
 ```sh
-python3 port.py --fetch        # download latest upstream, rebuild both ports
-python3 port.py --check        # report drift without writing (dry run)
+uv run --with pyyaml python3 port.py --fetch        # download latest upstream, rebuild both ports
+uv run --with pyyaml python3 port.py --check        # report drift without writing
 ```
 
-The generated trees are rebuilt wholesale, so keep hand-edits out of
-`opencode/` and `prime-agent/`. To patch generated output durably, drop a
-file under `overrides/<target>/` mirroring the output path — it is copied
-verbatim over the result at the end of every build:
+## Keeping your changes
+
+`GENERATED.sha256` records generated files. Before a build writes output,
+`port.py` checks those hashes and stops if a generated file changed. Move the
+change into `overrides/`, or rerun with `--force` after you review it.
+
+Keep whole-file overrides under `overrides/<target>/`, mirroring the output
+path. For smaller edits, save a unified diff as
+`overrides/<target>/<path>.patch`. Create one from the repo root with:
 
 ```
-overrides/opencode/skills/how/SKILL.md      # replaces the generated file
-overrides/prime-agent/prompts/poteto.md     # same for prime-agent
+diff -u --label a/skills/how/SKILL.md --label b/skills/how/SKILL.md \
+  /tmp/SKILL.generated.md /tmp/SKILL.edited.md \
+  > overrides/opencode/skills/how/SKILL.md.patch
 ```
 
-`.github/workflows/pstack-sync.yml` runs `--fetch` weekly and opens a PR
+`overrides/BASES.sha256` records the generated content replaced by whole-file
+overrides. A warning means upstream changed that file and the override needs
+review. `--strict` exits with an error for warnings.
+
+Installers keep a `.pstack-install.sha256` manifest in the destination. They
+update files that still match the last installed version, preserve local edits,
+and write the new version beside an edited file as `<file>.pstack-new`.
+
+.github/workflows/pstack-sync.yml runs `--fetch` weekly and opens a PR
 whenever the generated output changes, so upstream updates arrive as
 reviewable diffs.
 
@@ -1492,8 +1502,7 @@ Both harnesses at once (or pick one):
 ./install.sh opencode    # ~/.config/opencode only
 
 ./uninstall.sh           # same targeting; removes only the files this repo
-                         # ships plus the /setup-pstack artifacts, leaving
-                         # anything you added yourself untouched
+                         # installed and leaves local edits untouched
 ```
 
 Destinations default to `~/.prime/agent` and `~/.config/opencode`; override
@@ -1504,7 +1513,6 @@ wrappers just call them.
 
 ```sh
 ./opencode/install.sh            # defaults to ~/.config/opencode
-# or: cp -R opencode/skills opencode/agents opencode/commands ~/.config/opencode/
 ```
 
 Then inside opencode: `/poteto-mode` (or select the `poteto` primary agent).
@@ -1523,8 +1531,8 @@ Then inside prime-agent: `/skill:poteto-mode` (explicit) or describe the task in
 poteto's style; `/poteto` is a prompt template that expands to the same thing.
 `/skill:setup-pstack` writes the per-role model table to
 `~/.prime/agent/pstack-models.md` and keeps a pointer block in
-`~/.prime/agent/AGENTS.md` — delete the pointer block (and the file) when you
-do not want pstack model config to apply.
+`~/.prime/agent/AGENTS.md` — delete the pointer block when you do not want
+pstack model config to apply. Uninstall leaves setup-pstack files in place.
 
 ## What each port contains
 
@@ -1646,20 +1654,104 @@ def write_stamp(dst: Path, src_desc: str) -> None:
     write(dst / "UPSTREAM", src_desc + "\n")
 
 
-def apply_overrides(dst_root: Path, target: str) -> int:
-    """Copy overrides/<target>/ files verbatim over the generated output."""
-    odir = dst_root / "overrides" / target
+def apply_overrides(
+    dst_root: Path, target: str, bases: dict[str, str], override_root: Path
+) -> int:
+    """Apply whole-file overrides and patches for one generated target."""
+    odir = override_root / target
     if not odir.is_dir():
         return 0
     n = 0
     for f in sorted(odir.rglob("*")):
-        if f.is_file():
-            rel = f.relative_to(odir)
-            out = dst_root / target / rel
-            out.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(f, out)
-            n += 1
+        if not f.is_file() or f.suffix == ".patch":
+            continue
+        rel = f.relative_to(odir)
+        out = dst_root / target / rel
+        key = f"{target}/{rel.as_posix()}"
+        before = out.read_bytes() if out.exists() else b""
+        bases[key] = hashlib.sha256(before).hexdigest()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, out)
+        n += 1
+    for patch in sorted(odir.rglob("*.patch")):
+        rel = patch.relative_to(odir)
+        target_rel = Path(str(rel)[: -len(".patch")])
+        out = dst_root / target / target_rel
+        if not out.is_file():
+            sys.exit(
+                f"patch overrides/{target}/{rel.as_posix()}.patch targets missing file {target}/{target_rel}"
+            )
+        result = subprocess.run(
+            ["patch", "--batch", "-F0", "-p1", "-i", str(patch.resolve())],
+            capture_output=True,
+            cwd=dst_root / target,
+        )
+        if result.returncode:
+            sys.exit(
+                f"patch {patch.relative_to(override_root)} does not apply to {target}/{target_rel}: {(result.stdout + result.stderr).decode().strip()}"
+            )
+        n += 1
     return n
+
+
+def read_hash_manifest(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    entries = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        digest, sep, name = line.partition("  ")
+        if sep:
+            entries[name] = digest
+    return entries
+
+
+def write_hash_manifest(path: Path, entries: dict[str, str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(
+        "".join(f"{digest}  {name}\n" for name, digest in sorted(entries.items())),
+        encoding="utf-8",
+    )
+    os.replace(tmp, path)
+
+
+def generated_hashes(root: Path) -> dict[str, str]:
+    entries = {}
+    for target in ("opencode", "prime-agent", "extras"):
+        base = root / target
+        if base.is_dir():
+            for f in sorted(base.rglob("*")):
+                if f.is_file() and not {"node_modules", "__pycache__"}.intersection(
+                    f.parts
+                ):
+                    name = f.relative_to(root).as_posix()
+                    entries[name] = hashlib.sha256(f.read_bytes()).hexdigest()
+    for name in ("README.md", "ADAPTATIONS.md"):
+        path = root / name
+        if path.is_file():
+            entries[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return entries
+
+
+def generated_mismatches(root: Path) -> list[str]:
+    expected = read_hash_manifest(root / "GENERATED.sha256")
+    if not expected:
+        return []
+    actual = generated_hashes(root)
+    return sorted(
+        name
+        for name in set(expected) | set(actual)
+        if expected.get(name) != actual.get(name)
+    )
+
+
+def whole_override_warnings(root: Path, bases: dict[str, str]) -> None:
+    previous = read_hash_manifest(root / "overrides" / "BASES.sha256")
+    for name, digest in sorted(bases.items()):
+        if name in previous and previous[name] != digest:
+            warn(
+                f"upstream changed whole-file override base {name}; review overrides/{name}"
+            )
 
 
 def _hash_tree(root: Path) -> dict[str, str]:
@@ -1694,7 +1786,9 @@ def drift_report(new_root: Path, old_root: Path) -> str:
     return "\n".join(lines) or "no changes"
 
 
-def build_all(src: Path, dst: Path) -> None:
+def build_all(
+    src: Path, dst: Path, overrides_root: Path | None = None
+) -> dict[str, str]:
     global ACTIVE_SKILLS
     ACTIVE_SKILLS = {d.name for d in (src / "skills").iterdir() if d.is_dir()}
     check_persistent_rewrites(src)
@@ -1703,10 +1797,23 @@ def build_all(src: Path, dst: Path) -> None:
     build_extras(src, dst / "extras")
     write(dst / "README.md", README)
     write(dst / "ADAPTATIONS.md", ADAPTATIONS)
+    bases: dict[str, str] = {}
+    override_root = overrides_root or dst / "overrides"
     for target in ("opencode", "prime-agent"):
-        n = apply_overrides(dst, target)
+        n = apply_overrides(dst, target, bases, override_root)
         if n:
             print(f"applied {n} override(s) to {target}/")
+    whole_override_warnings(override_root.parent, bases)
+    return bases
+
+
+def install_build(staged: Path, dst: Path) -> None:
+    for target in ("opencode", "prime-agent", "extras"):
+        shutil.rmtree(dst / target, ignore_errors=True)
+        if (staged / target).is_dir():
+            shutil.copytree(staged / target, dst / target)
+    for name in ("README.md", "ADAPTATIONS.md"):
+        shutil.copy2(staged / name, dst / name)
 
 
 def fail_if_strict(strict: bool) -> None:
@@ -1734,17 +1841,29 @@ def main() -> None:
         "--ref", default="main", help="upstream ref/tag/sha (default: main)"
     )
     ap.add_argument(
-        "--strict",
-        action="store_true",
-        help="exit 1 if any warning was printed (an upstream rewording broke a local rewrite)",
+        "--strict", action="store_true", help="exit 1 if any warning was printed"
     )
     ap.add_argument(
         "--check",
         action="store_true",
         help="regenerate to a temp dir and print a drift report (no writes)",
     )
+    ap.add_argument(
+        "--force", action="store_true", help="build despite generated-file edits"
+    )
     args = ap.parse_args()
     dst = Path(args.dst)
+    WARNINGS.clear()
+    if not args.check:
+        edits = generated_mismatches(dst)
+        if edits:
+            if not args.force:
+                sys.exit(
+                    "generated files differ from GENERATED.sha256:\n"
+                    + "".join(f"  {path}\n" for path in edits)
+                    + "Move changes into overrides/ or rerun with --force."
+                )
+            warn("--force will replace generated-file edits: " + ", ".join(edits))
     cache = dst / ".upstream" / UPSTREAM_SUBDIR
 
     src_desc = None
@@ -1767,14 +1886,23 @@ def main() -> None:
 
     if args.check:
         with tempfile.TemporaryDirectory() as tmp:
-            build_all(src, Path(tmp))
+            build_all(src, Path(tmp), overrides_root=dst / "overrides")
             print(drift_report(Path(tmp), dst))
+        edits = generated_mismatches(dst)
+        if edits:
+            warn("hand edits differ from GENERATED.sha256: " + ", ".join(edits))
         fail_if_strict(args.strict)
         return
 
-    build_all(src, dst)
+    with tempfile.TemporaryDirectory() as tmp:
+        staged = Path(tmp)
+        bases = build_all(src, staged, overrides_root=dst / "overrides")
+        fail_if_strict(args.strict)
+        install_build(staged, dst)
     if src_desc:
         write_stamp(dst, src_desc)
+    write_hash_manifest(dst / "overrides" / "BASES.sha256", bases)
+    write_hash_manifest(dst / "GENERATED.sha256", generated_hashes(dst))
     print("wrote", dst)
     fail_if_strict(args.strict)
 

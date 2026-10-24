@@ -18,21 +18,33 @@ See `ADAPTATIONS.md` for the Cursor → harness mapping table.
 ## Keeping in sync with upstream
 
 ```sh
-python3 port.py --fetch        # download latest upstream, rebuild both ports
-python3 port.py --check        # report drift without writing (dry run)
+uv run --with pyyaml python3 port.py --fetch        # download latest upstream, rebuild both ports
+uv run --with pyyaml python3 port.py --check        # report drift without writing
 ```
 
-The generated trees are rebuilt wholesale, so keep hand-edits out of
-`opencode/` and `prime-agent/`. To patch generated output durably, drop a
-file under `overrides/<target>/` mirroring the output path — it is copied
-verbatim over the result at the end of every build:
+## Keeping your changes
+
+`GENERATED.sha256` records generated files. Before a build writes output,
+`port.py` checks those hashes and stops if a generated file changed. Move the
+change into `overrides/`, or rerun with `--force` after you review it.
+
+Keep whole-file overrides under `overrides/<target>/`, mirroring the output
+path. For smaller edits, save a unified diff as
+`overrides/<target>/<path>.patch`. Create one from the repo root with:
 
 ```
-overrides/opencode/skills/how/SKILL.md      # replaces the generated file
-overrides/prime-agent/prompts/poteto.md     # same for prime-agent
+diff -u --label a/skills/how/SKILL.md --label b/skills/how/SKILL.md   /tmp/SKILL.generated.md /tmp/SKILL.edited.md   > overrides/opencode/skills/how/SKILL.md.patch
 ```
 
-`.github/workflows/pstack-sync.yml` runs `--fetch` weekly and opens a PR
+`overrides/BASES.sha256` records the generated content replaced by whole-file
+overrides. A warning means upstream changed that file and the override needs
+review. `--strict` exits with an error for warnings.
+
+Installers keep a `.pstack-install.sha256` manifest in the destination. They
+update files that still match the last installed version, preserve local edits,
+and write the new version beside an edited file as `<file>.pstack-new`.
+
+.github/workflows/pstack-sync.yml runs `--fetch` weekly and opens a PR
 whenever the generated output changes, so upstream updates arrive as
 reviewable diffs.
 
@@ -46,8 +58,7 @@ Both harnesses at once (or pick one):
 ./install.sh opencode    # ~/.config/opencode only
 
 ./uninstall.sh           # same targeting; removes only the files this repo
-                         # ships plus the /setup-pstack artifacts, leaving
-                         # anything you added yourself untouched
+                         # installed and leaves local edits untouched
 ```
 
 Destinations default to `~/.prime/agent` and `~/.config/opencode`; override
@@ -58,7 +69,6 @@ wrappers just call them.
 
 ```sh
 ./opencode/install.sh            # defaults to ~/.config/opencode
-# or: cp -R opencode/skills opencode/agents opencode/commands ~/.config/opencode/
 ```
 
 Then inside opencode: `/poteto-mode` (or select the `poteto` primary agent).
@@ -77,8 +87,8 @@ Then inside prime-agent: `/skill:poteto-mode` (explicit) or describe the task in
 poteto's style; `/poteto` is a prompt template that expands to the same thing.
 `/skill:setup-pstack` writes the per-role model table to
 `~/.prime/agent/pstack-models.md` and keeps a pointer block in
-`~/.prime/agent/AGENTS.md` — delete the pointer block (and the file) when you
-do not want pstack model config to apply.
+`~/.prime/agent/AGENTS.md` — delete the pointer block when you do not want
+pstack model config to apply. Uninstall leaves setup-pstack files in place.
 
 ## What each port contains
 

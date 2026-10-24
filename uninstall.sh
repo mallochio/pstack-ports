@@ -7,9 +7,8 @@
 #
 # Removes only the entries this repo installs — the skills/, agents/, and
 # prompts/ (prime) or commands/ (opencode) names present in the port tree —
-# plus the artifacts /setup-pstack writes:
-#   prime:    pstack-models.md and the pstack pointer block in AGENTS.md
-#   opencode: pstack-models.md and its entry in opencode.json `instructions`
+# The /setup-pstack model table stays in place because the installer does not
+# own it. Uninstall also removes the pstack pointer block and JSON instruction.
 # Anything you added yourself under those dirs is left alone.
 #
 # Destination overrides: PRIME_DST=..., OPENCODE_DST=...
@@ -23,15 +22,6 @@ case "$target" in
   -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
   *) echo "usage: $0 [prime|opencode]" >&2; exit 2 ;;
 esac
-
-# Remove, under $2, every top-level name present under $1.
-remove_tree_entries() {
-  [ -d "$1" ] || return 0
-  local entry
-  for entry in "$1"/*; do
-    rm -rf "$2/$(basename "$entry")"
-  done
-}
 
 # Delete both the current <!-- pstack:start --> ... :end --> pointer block
 # and the legacy <!-- pstack-models:start --> ... :end --> block from $1.
@@ -51,10 +41,7 @@ strip_models_block() {
 
 uninstall_prime() {
   local dst="$1" src="$ROOT/prime-agent"
-  remove_tree_entries "$src/skills"  "$dst/skills"
-  remove_tree_entries "$src/agents"  "$dst/agents"
-  remove_tree_entries "$src/prompts" "$dst/prompts"
-  rm -f "$dst/pstack-models.md"
+  python3 "$src/scripts/install_tree.py" --uninstall "$dst"
   strip_models_block "$dst/AGENTS.md"
   strip_models_block "$(dirname "$dst")/AGENTS.md"
   if [ -f "$dst/settings.json" ] && grep -q pstack "$dst/settings.json"; then
@@ -66,10 +53,7 @@ uninstall_prime() {
 
 uninstall_opencode() {
   local dst="$1" src="$ROOT/opencode"
-  remove_tree_entries "$src/skills"   "$dst/skills"
-  remove_tree_entries "$src/agents"   "$dst/agents"
-  remove_tree_entries "$src/commands" "$dst/commands"
-  rm -f "$dst/pstack-models.md"
+  python3 "$src/scripts/install_tree.py" --uninstall "$dst"
   if [ -f "$dst/opencode.json" ] && grep -q 'pstack-models' "$dst/opencode.json"; then
     DST="$dst" python3 - <<'PY'
 import json, os, re
