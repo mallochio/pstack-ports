@@ -87,12 +87,32 @@ MODELS_BASENAME = {
 
 # Skills that exist inside pstack (so `/name` means "the name skill").
 PSTACK_SKILLS = {
-    "architect", "arena", "automate-me", "benchmark-checklist", "blast-radius",
-    "bro", "correct", "create-verification-skill", "figure-it-out", "how",
-    "interrogate", "maintain-verification-skill", "make-bot-ui", "no-comments",
-    "poteto-mode", "recall", "reflect", "setup-pstack", "show-me-your-work",
-    "swarm", "tdd", "teach", "technical-writing", "typescript-best-practices",
-    "unslop", "why",
+    "architect",
+    "arena",
+    "automate-me",
+    "benchmark-checklist",
+    "blast-radius",
+    "bro",
+    "correct",
+    "create-verification-skill",
+    "figure-it-out",
+    "how",
+    "interrogate",
+    "maintain-verification-skill",
+    "make-bot-ui",
+    "no-comments",
+    "poteto-mode",
+    "recall",
+    "reflect",
+    "setup-pstack",
+    "show-me-your-work",
+    "swarm",
+    "tdd",
+    "teach",
+    "technical-writing",
+    "typescript-best-practices",
+    "unslop",
+    "why",
 }
 
 # Skills owned by other Cursor plugins / built-ins we reference conditionally.
@@ -119,6 +139,7 @@ def slash_repl(target: str, name: str) -> str:
 # Patterns are regexes.
 # ---------------------------------------------------------------------------
 
+
 def common_rewrites(target: str) -> list[tuple[str, str]]:
     is_prime = target == "prime-agent"
     task_call = r"`rlm\.spawn` call" if is_prime else "task call"
@@ -132,323 +153,541 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         # Both harnesses use a standalone file. Prime keeps only a pointer
         # block in AGENTS.md so pstack stays removable without touching the
         # rest of that file.
-        (r"`~/\.cursor/rules/pstack-models\.mdc`",
-         "`pstack-models.md`"),
-        (re.escape("~/.cursor/rules/pstack-models.mdc"),
-         "~/.config/opencode/pstack-models.md" if not is_prime
-         else "~/.prime/agent/pstack-models.md"),
-        (r"`pstack-models\.mdc`",
-         "`pstack-models.md`"),
-        (r"pstack-models\.mdc",
-         "pstack-models.md"),
+        (r"`~/\.cursor/rules/pstack-models\.mdc`", "`pstack-models.md`"),
+        (
+            re.escape("~/.cursor/rules/pstack-models.mdc"),
+            "~/.config/opencode/pstack-models.md"
+            if not is_prime
+            else "~/.prime/agent/pstack-models.md",
+        ),
+        (r"`pstack-models\.mdc`", "`pstack-models.md`"),
+        (r"pstack-models\.mdc", "pstack-models.md"),
         # ---- transcripts -------------------------------------------------------
-        (r"`~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>\.jsonl`[^.]*"
-         r"(where `<slug>` is the workspace path with the leading slash dropped and each \"/\" turned into \"-\" \(so `/Users/you/proj` becomes `Users-you-proj`\))?\.\s*Every line is one chat message\.",
-         ("the session transcript for this workspace under prime-agent's session "
-          "store (`~/.prime/agent/sessions/*.jsonl`). Every line is one session entry.")
-         if is_prime else
-         ("the session transcript for this workspace under the harness's session "
-          "store (opencode keeps sessions under `~/.local/share/opencode/storage/`; "
-          "locate this session's file rather than globbing every workspace).")),
-        (r"the active workspace's `agent-transcripts/` directory \(the system prompt names the path\. Do not glob across `~/.cursor/projects/\*/`, that crosses workspace boundaries and reads private chats from unrelated projects\)",
-         "this session's transcript directory (do not glob across "
-         "`~/.prime/agent/sessions/` entries outside this session — that crosses "
-         "workspace boundaries and reads private chats from unrelated projects)"
-         if is_prime else
-         "this session's transcript directory (do not glob across the harness's "
-         "other workspaces' session stores — that crosses workspace boundaries "
-         "and reads private chats from unrelated projects)"),
-        (r"a cloud-agent URL",
-         "a resident-session URL" if is_prime else "a background-session URL"),
-        (r"the active workspace's `agent-transcripts/` directory",
-         "this session's transcript directory" if not is_prime else
-         "`~/.prime/agent/sessions/`"),
-        (r"local transcripts under `agent-transcripts/`",
-         "local session transcripts under `~/.prime/agent/sessions/`" if is_prime else
-         "local transcripts under the harness's session store"),
-        (r"`agent-transcripts/`",
-         "`~/.prime/agent/sessions/`" if is_prime else "the harness's session store"),
-        (r"~/.cursor/projects/\*/",
-         "the harness's other workspaces' session stores" if not is_prime else
-         "~/.prime/agent/sessions/ entries outside this session"),
-        (r"the Cursor dashboard", "the harness's session list" if not is_prime else
-         "the daemon's session list"),
-        (r"After a Cursor restart: local agents are dead, cloud work is not\.",
-         "After a harness restart: spawned children are dead, resident sessions are not."
-         if is_prime else
-         "After a harness restart: running subagents are dead, detached sessions are not."),
+        (
+            r"`~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>\.jsonl`[^.]*"
+            r"(where `<slug>` is the workspace path with the leading slash dropped and each \"/\" turned into \"-\" \(so `/Users/you/proj` becomes `Users-you-proj`\))?\.\s*Every line is one chat message\.",
+            (
+                "the session transcript for this workspace under prime-agent's session "
+                "store (`~/.prime/agent/sessions/*.jsonl`). Every line is one session entry."
+            )
+            if is_prime
+            else (
+                "the session transcript for this workspace under the harness's session "
+                "store (opencode keeps sessions under `~/.local/share/opencode/storage/`; "
+                "locate this session's file rather than globbing every workspace)."
+            ),
+        ),
+        (
+            r"the active workspace's `agent-transcripts/` directory \(the system prompt names the path\. Do not glob across `~/.cursor/projects/\*/`, that crosses workspace boundaries and reads private chats from unrelated projects\)",
+            "this session's transcript directory (do not glob across "
+            "`~/.prime/agent/sessions/` entries outside this session — that crosses "
+            "workspace boundaries and reads private chats from unrelated projects)"
+            if is_prime
+            else "this session's transcript directory (do not glob across the harness's "
+            "other workspaces' session stores — that crosses workspace boundaries "
+            "and reads private chats from unrelated projects)",
+        ),
+        (
+            r"a cloud-agent URL",
+            "a resident-session URL" if is_prime else "a background-session URL",
+        ),
+        (
+            r"the active workspace's `agent-transcripts/` directory",
+            "this session's transcript directory"
+            if not is_prime
+            else "`~/.prime/agent/sessions/`",
+        ),
+        (
+            r"local transcripts under `agent-transcripts/`",
+            "local session transcripts under `~/.prime/agent/sessions/`"
+            if is_prime
+            else "local transcripts under the harness's session store",
+        ),
+        (
+            r"`agent-transcripts/`",
+            "`~/.prime/agent/sessions/`" if is_prime else "the harness's session store",
+        ),
+        (
+            r"~/.cursor/projects/\*/",
+            "the harness's other workspaces' session stores"
+            if not is_prime
+            else "~/.prime/agent/sessions/ entries outside this session",
+        ),
+        (
+            r"the Cursor dashboard",
+            "the harness's session list"
+            if not is_prime
+            else "the daemon's session list",
+        ),
+        (
+            r"After a Cursor restart: local agents are dead, cloud work is not\.",
+            "After a harness restart: spawned children are dead, resident sessions are not."
+            if is_prime
+            else "After a harness restart: running subagents are dead, detached sessions are not.",
+        ),
         (r"Re-read the standing orders", "Re-read the standing orders"),
         (r"reattach cloud work", "reattach detached work"),
         (r"a Cursor restart", "a harness restart"),
-        (r"`git show origin/main:pstack/(skills/[^`]+)`",
-         lambda m: "read the installed copy at `{}`".format(
-             ("~/.prime/agent/" if is_prime else "~/.config/opencode/") + m.group(1))),
-        (r"`git show origin/main:<control skill path>`",
-         "read the installed control skill (if one is installed)"),
+        (
+            r"`git show origin/main:pstack/(skills/[^`]+)`",
+            lambda m: "read the installed copy at `{}`".format(
+                ("~/.prime/agent/" if is_prime else "~/.config/opencode/") + m.group(1)
+            ),
+        ),
+        (
+            r"`git show origin/main:<control skill path>`",
+            "read the installed control skill (if one is installed)",
+        ),
         # ---- make-bot-ui: automation-host agnostic ----------------------------
-        (r"Call `update_state` with target `routine` and action `create`\. Set these fields:",
-         "Create a webhook routine with the automation host this harness runs (Cursor routines, "
-         "a webhook responder, or a scheduled-agent inbox — whichever you configured for benny). "
-         "Set these fields:"),
-        (r"If `update_state` shows a confirm card, wait for the user to confirm\.",
-         "If the automation host asks for confirmation, wait for the user to confirm."),
-        (r"1\. Click this agent's name in the chat header, or press \*\*Cmd\+Shift\+I\*\*\.\n"
-         r"2\. Find the \*\*Routines\*\* list under the computer preview\.\n"
-         r"3\. Open this webhook routine\.\n"
-         r"4\. Copy the webhook URL\. The user may paste the URL in chat\.\n"
-         r"5\. Copy the sender key\. The user must not paste the sender key in chat\.",
-         "1. Open the routine in the automation host's panel/UI.\n"
-         "2. Copy the webhook URL. The user may paste the URL in chat.\n"
-         "3. Copy the sender key. The user must not paste the sender key in chat."),
-        (r"The URL looks like `https://api2\.cursor\.sh/automations/webhook/<id>` with no query string\.",
-         "On Cursor routines the URL looks like "
-         "`https://api2.cursor.sh/automations/webhook/<id>` with no query string; "
-         "other automation hosts expose an equivalent URL."),
+        (
+            r"Call `update_state` with target `routine` and action `create`\. Set these fields:",
+            "Create a webhook routine with the automation host this harness runs (Cursor routines, "
+            "a webhook responder, or a scheduled-agent inbox — whichever you configured for benny). "
+            "Set these fields:",
+        ),
+        (
+            r"If `update_state` shows a confirm card, wait for the user to confirm\.",
+            "If the automation host asks for confirmation, wait for the user to confirm.",
+        ),
+        (
+            r"1\. Click this agent's name in the chat header, or press \*\*Cmd\+Shift\+I\*\*\.\n"
+            r"2\. Find the \*\*Routines\*\* list under the computer preview\.\n"
+            r"3\. Open this webhook routine\.\n"
+            r"4\. Copy the webhook URL\. The user may paste the URL in chat\.\n"
+            r"5\. Copy the sender key\. The user must not paste the sender key in chat\.",
+            "1. Open the routine in the automation host's panel/UI.\n"
+            "2. Copy the webhook URL. The user may paste the URL in chat.\n"
+            "3. Copy the sender key. The user must not paste the sender key in chat.",
+        ),
+        (
+            r"The URL looks like `https://api2\.cursor\.sh/automations/webhook/<id>` with no query string\.",
+            "On Cursor routines the URL looks like "
+            "`https://api2.cursor.sh/automations/webhook/<id>` with no query string; "
+            "other automation hosts expose an equivalent URL.",
+        ),
         # ---- skills dirs --------------------------------------------------------
-        (r"\.cursor/skills/",
-         ".opencode/skills/" if not is_prime else ".prime/agent/skills/"),
-        (r"~/.cursor/skills/",
-         "~/.config/opencode/skills/" if not is_prime else "~/.prime/agent/skills/"),
-        (r"~/.cursor/plugins/",
-         "~/.config/opencode/" if not is_prime else "installed package paths under `~/.prime/agent/`"),
-        (r"the Cursor environment\. Use the available-tools map when present\. Otherwise inspect the `mcps/` directory Cursor exposes for enabled MCP servers\.",
-         ("the harness environment. Use the available-tools map when present, or "
-          "the configured MCP server list in opencode.json.") if not is_prime else
-         ("the harness environment through the kernel (`rlm.mcp` / `mcp_status`).")),
+        (
+            r"\.cursor/skills/",
+            ".opencode/skills/" if not is_prime else ".prime/agent/skills/",
+        ),
+        (
+            r"~/.cursor/skills/",
+            "~/.config/opencode/skills/" if not is_prime else "~/.prime/agent/skills/",
+        ),
+        (
+            r"~/.cursor/plugins/",
+            "~/.config/opencode/"
+            if not is_prime
+            else "installed package paths under `~/.prime/agent/`",
+        ),
+        (
+            r"the Cursor environment\. Use the available-tools map when present\. Otherwise inspect the `mcps/` directory Cursor exposes for enabled MCP servers\.",
+            (
+                "the harness environment. Use the available-tools map when present, or "
+                "the configured MCP server list in opencode.json."
+            )
+            if not is_prime
+            else (
+                "the harness environment through the kernel (`rlm.mcp` / `mcp_status`)."
+            ),
+        ),
         # ---- cursor-team-kit / built-in externals --------------------------------
-        (r"a slop-strip \(the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)\)",
-         "a slop-strip pass (the `deslop` skill if your setup provides it, else a "
-         "hand pass against the **unslop** checklist)"),
-        (r"the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)",
-         "a `deslop` slop-strip if your setup provides it, else a hand pass "
-         "against the **unslop** checklist"),
-        (r"`cursor-team-kit` publishes `control-cli` \(CLIs and TUIs\) and `control-ui` \(browser / Electron / web UIs\)\.?",
-         "Use `control-cli` for CLIs/TUIs or `control-ui` for browser/web UIs when your "
-         "setup ships them; otherwise drive the real surface directly."),
-        (r"the matching control skill \(such as `control-ui` or `control-cli` from `cursor-team-kit`\)",
-         "the matching control-surface skill (`control-ui`/`control-cli` upstream — "
-         "if installed, else drive the real surface directly)"),
-        (r"\(such as `control-ui` or `control-cli`[^)]*\)",
-         "(a control-surface skill such as `control-ui`/`control-cli` if installed, "
-         "else the real surface directly)"),
-        (r"(`control-ui` or `control-cli`) from `cursor-team-kit`",
-         r"\1 (upstream Cursor plugin — if installed)"),
-        (r"(`control-(ui|cli)`) from `cursor-team-kit`",
-         r"\1 (upstream Cursor plugin — if installed)"),
-        (r"(`?/?control-(ui|cli)`?|/control-(ui|cli)) from `cursor-team-kit`",
-         "a control-surface skill (upstream Cursor plugin — if installed)"),
-        (r"\(from `cursor-team-kit`\)",
-         "(upstream Cursor plugin — use it if installed, else do the pass by hand)"),
-        (r" from `cursor-team-kit`| from the `cursor-team-kit` plugin",
-         " (upstream Cursor plugin — use it if installed, else do the pass by hand)"),
+        (
+            r"a slop-strip \(the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)\)",
+            "a slop-strip pass (the `deslop` skill if your setup provides it, else a "
+            "hand pass against the **unslop** checklist)",
+        ),
+        (
+            r"the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)",
+            "a `deslop` slop-strip if your setup provides it, else a hand pass "
+            "against the **unslop** checklist",
+        ),
+        (
+            r"`cursor-team-kit` publishes `control-cli` \(CLIs and TUIs\) and `control-ui` \(browser / Electron / web UIs\)\.?",
+            "Use `control-cli` for CLIs/TUIs or `control-ui` for browser/web UIs when your "
+            "setup ships them; otherwise drive the real surface directly.",
+        ),
+        (
+            r"the matching control skill \(such as `control-ui` or `control-cli` from `cursor-team-kit`\)",
+            "the matching control-surface skill (`control-ui`/`control-cli` upstream — "
+            "if installed, else drive the real surface directly)",
+        ),
+        (
+            r"\(such as `control-ui` or `control-cli`[^)]*\)",
+            "(a control-surface skill such as `control-ui`/`control-cli` if installed, "
+            "else the real surface directly)",
+        ),
+        (
+            r"(`control-ui` or `control-cli`) from `cursor-team-kit`",
+            r"\1 (upstream Cursor plugin — if installed)",
+        ),
+        (
+            r"(`control-(ui|cli)`) from `cursor-team-kit`",
+            r"\1 (upstream Cursor plugin — if installed)",
+        ),
+        (
+            r"(`?/?control-(ui|cli)`?|/control-(ui|cli)) from `cursor-team-kit`",
+            "a control-surface skill (upstream Cursor plugin — if installed)",
+        ),
+        (
+            r"\(from `cursor-team-kit`\)",
+            "(upstream Cursor plugin — use it if installed, else do the pass by hand)",
+        ),
+        (
+            r" from `cursor-team-kit`| from the `cursor-team-kit` plugin",
+            " (upstream Cursor plugin — use it if installed, else do the pass by hand)",
+        ),
         (r" of `cursor-team-kit`", " of the upstream Cursor plugin"),
         (r"`cursor-team-kit`", "the upstream Cursor plugin"),
-        (r"the matching control skill",
-         "the matching control-surface skill when one is installed, else the real surface directly"),
-        (r"the \*\*create-skill\*\* skill \(Cursor's built-in for authoring SKILL\.md files\)",
-         "the `skill-creator` skill" if is_prime else
-         "the `authoring-a-skill` playbook's conventions"),
-        (r"Cursor's built-in `create-skill` \(authoring\)",
-         "prime-agent's built-in `skill-creator` (authoring)" if is_prime else
-         "the `authoring-a-skill` playbook (authoring)"),
-        (r"Cursor's built-in `create-skill` skill",
-         "the `skill-creator` skill" if is_prime else
-         "the `authoring-a-skill` playbook"),
-        (r", and not Cursor's built-in babysit skill, whose description matches the same words",
-         ", and not any built-in babysit helper"),
-        (r"Cursor's built-in babysit skill",
-         "a built-in babysit helper"),
+        (
+            r"the matching control skill",
+            "the matching control-surface skill when one is installed, else the real surface directly",
+        ),
+        (
+            r"the \*\*create-skill\*\* skill \(Cursor's built-in for authoring SKILL\.md files\)",
+            "the `skill-creator` skill"
+            if is_prime
+            else "the `authoring-a-skill` playbook's conventions",
+        ),
+        (
+            r"Cursor's built-in `create-skill` \(authoring\)",
+            "prime-agent's built-in `skill-creator` (authoring)"
+            if is_prime
+            else "the `authoring-a-skill` playbook (authoring)",
+        ),
+        (
+            r"Cursor's built-in `create-skill` skill",
+            "the `skill-creator` skill"
+            if is_prime
+            else "the `authoring-a-skill` playbook",
+        ),
+        (
+            r", and not Cursor's built-in babysit skill, whose description matches the same words",
+            ", and not any built-in babysit helper",
+        ),
+        (r"Cursor's built-in babysit skill", "a built-in babysit helper"),
         # ---- subagent mechanics --------------------------------------------------
-        (r"Substituting\s+`generalPurpose`\s+skips",
-         "Substituting a plain child skips"),
-        (r"`?subagent_type`?: ?`?\"?generalPurpose\"?`?",
-         "a plain `rlm.spawn` child" if is_prime else "the `general` subagent"),
+        (
+            r"Substituting\s+`generalPurpose`\s+skips",
+            "Substituting a plain child skips",
+        ),
+        (
+            r"`?subagent_type`?: ?`?\"?generalPurpose\"?`?",
+            "a plain `rlm.spawn` child" if is_prime else "the `general` subagent",
+        ),
         # bare `generalPurpose` with no subagent_type prefix (e.g. why skill)
-        (r"is `generalPurpose` with",
-         "is a plain `rlm.spawn` child with" if is_prime else "is the `general` subagent with"),
-        (r"`generalPurpose`",
-         "a plain child" if is_prime else "the `general` subagent"),
+        (
+            r"is `generalPurpose` with",
+            "is a plain `rlm.spawn` child with"
+            if is_prime
+            else "is the `general` subagent with",
+        ),
+        (
+            r"`generalPurpose`",
+            "a plain child" if is_prime else "the `general` subagent",
+        ),
         # dedupe spawns rewritten from "Task subagent with subagent_type: X"
-        (r"Every spawn is a Task subagent with the `general` subagent and",
-         "Every spawn uses the `general` subagent with"),
-        (r"Every spawn is a Task subagent with a plain `rlm\.spawn` child and",
-         "Every spawn is a plain `rlm.spawn` child with"),
-        (r"Every spawn is a RLM child with a plain `rlm\.spawn` child and",
-         "Every spawn is a plain `rlm.spawn` child with"),
-        (r"`subagent_type: ?\"poteto-agent\"`|subagent_type: \"poteto-agent\"",
-         "an `rlm.spawn` child whose prompt opens with the `poteto-agent` spec paragraph"
-         if is_prime else "the `poteto-agent` subagent"),
-        (r"`subagent_type: \"Comment Sicko\"`|subagent_type: \"Comment Sicko\"",
-         "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
-         if is_prime else "the `comment-sicko` subagent"),
+        (
+            r"Every spawn is a Task subagent with the `general` subagent and",
+            "Every spawn uses the `general` subagent with",
+        ),
+        (
+            r"Every spawn is a Task subagent with a plain `rlm\.spawn` child and",
+            "Every spawn is a plain `rlm.spawn` child with",
+        ),
+        (
+            r"Every spawn is a RLM child with a plain `rlm\.spawn` child and",
+            "Every spawn is a plain `rlm.spawn` child with",
+        ),
+        (
+            r"`subagent_type: ?\"poteto-agent\"`|subagent_type: \"poteto-agent\"",
+            "an `rlm.spawn` child whose prompt opens with the `poteto-agent` spec paragraph"
+            if is_prime
+            else "the `poteto-agent` subagent",
+        ),
+        (
+            r"`subagent_type: \"Comment Sicko\"`|subagent_type: \"Comment Sicko\"",
+            "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
+            if is_prime
+            else "the `comment-sicko` subagent",
+        ),
         # lowercase variant used by no-comments skill: valid opencode
         # subagent_type, but meaningless to rlm.spawn — inline the spec instead.
-        (r"`subagent_type: \"comment-sicko\"`|subagent_type: \"comment-sicko\"",
-         "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
-         if is_prime else "`subagent_type: \"comment-sicko\"`"),
-        (r"`subagent_type`:",
-         "child spec:" if is_prime else "`subagent_type`:"),
-        (r"Spawn one Task subagent", "Spawn one %s" % ("`rlm.spawn` child" if is_prime else "Task subagent")),
-        (r"one Task subagent", "one %s" % ("`rlm.spawn` child" if is_prime else "Task subagent")),
+        (
+            r"`subagent_type: \"comment-sicko\"`|subagent_type: \"comment-sicko\"",
+            "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
+            if is_prime
+            else '`subagent_type: "comment-sicko"`',
+        ),
+        (r"`subagent_type`:", "child spec:" if is_prime else "`subagent_type`:"),
+        (
+            r"Spawn one Task subagent",
+            "Spawn one %s" % ("`rlm.spawn` child" if is_prime else "Task subagent"),
+        ),
+        (
+            r"one Task subagent",
+            "one %s" % ("`rlm.spawn` child" if is_prime else "Task subagent"),
+        ),
         (r"Task subagent", "RLM child" if is_prime else "Task subagent"),
-        (r"full Task schema including `environment`",
-         "full `rlm.spawn` signature" if is_prime else
-         "full `task` schema"),
+        (
+            r"full Task schema including `environment`",
+            "full `rlm.spawn` signature" if is_prime else "full `task` schema",
+        ),
         (r"the Task tool", "the `rlm.spawn` API" if is_prime else "the `task` tool"),
         (r"(?<!the )Task tool", "`rlm.spawn` API" if is_prime else "`task` tool"),
-        (r"one `Task` call", "one %s" % ("`rlm.spawn` call" if is_prime else "`task` call")),
-        (r"three `Task` calls", "three %s" % ("`rlm.spawn` calls" if is_prime else "`task` calls")),
-        (r"single message using the Task tool",
-         "single fan-out of `rlm.spawn` calls" if is_prime else "single message using the Task tool"),
+        (
+            r"one `Task` call",
+            "one %s" % ("`rlm.spawn` call" if is_prime else "`task` call"),
+        ),
+        (
+            r"three `Task` calls",
+            "three %s" % ("`rlm.spawn` calls" if is_prime else "`task` calls"),
+        ),
+        (
+            r"single message using the Task tool",
+            "single fan-out of `rlm.spawn` calls"
+            if is_prime
+            else "single message using the Task tool",
+        ),
         (r"`Task` calls", "`rlm.spawn` calls" if is_prime else "`task` calls"),
         (r"`Task` call", "`rlm.spawn` call" if is_prime else "`task` call"),
         (r"\bTask calls\b", "`rlm.spawn` calls" if is_prime else "task calls"),
         (r"`Task`", "`rlm.spawn`" if is_prime else "`task`"),
         (r"\bTask\b(?= with)", "`rlm.spawn`" if is_prime else "`task`"),
         (r"\bTask\b(?= spawn)", "`rlm.spawn` child" if is_prime else "`task`"),
-        (r"\bevery Task spawn\b", "every `rlm.spawn` child" if is_prime else "every task spawn"),
-        (r"Spawn `Task`", "Spawn %s" % ("an `rlm.spawn` child" if is_prime else "a `task`")),
+        (
+            r"\bevery Task spawn\b",
+            "every `rlm.spawn` child" if is_prime else "every task spawn",
+        ),
+        (
+            r"Spawn `Task`",
+            "Spawn %s" % ("an `rlm.spawn` child" if is_prime else "a `task`"),
+        ),
         # run_in_background
-        (r"`run_in_background: true`",
-         "children run concurrently once spawned — collect them with `rlm.collect`"
-         if is_prime else "run in the background where the task tool supports it"),
-        (r"run_in_background: true", "concurrent children" if is_prime else "background tasks"),
+        (
+            r"`run_in_background: true`",
+            "children run concurrently once spawned — collect them with `rlm.collect`"
+            if is_prime
+            else "run in the background where the task tool supports it",
+        ),
+        (
+            r"run_in_background: true",
+            "concurrent children" if is_prime else "background tasks",
+        ),
         # agent mode / readonly (list forms AND inline backticked forms)
-        (r"agent mode \(`readonly: false`\)|agent mode \(readonly strips MCP\)",
-         "full tool access"),
-        (r"`readonly: (?:true|false)` \(agent mode\)",
-         "full tool access"),
-        (r"with `readonly: false` \(agent mode\)",
-         "with full tool access"),
-        (r"`readonly`: `true`",
-         "a read-only brief: instruct the child it must not modify files or run "
-         "mutating commands"),
-        (r"`readonly`: `false` \(agent mode\)\.",
-         "full tool access."),
+        (
+            r"agent mode \(`readonly: false`\)|agent mode \(readonly strips MCP\)",
+            "full tool access",
+        ),
+        (r"`readonly: (?:true|false)` \(agent mode\)", "full tool access"),
+        (r"with `readonly: false` \(agent mode\)", "with full tool access"),
+        (
+            r"`readonly`: `true`",
+            "a read-only brief: instruct the child it must not modify files or run "
+            "mutating commands",
+        ),
+        (r"`readonly`: `false` \(agent mode\)\.", "full tool access."),
         # colon-inside-backticks inline forms (how/why/interrogate upstream)
-        (r"`readonly: (?:true|false)` \(agent mode\)",
-         "full tool access"),
-        (r"with `readonly: false` \(agent mode\)",
-         "with full tool access"),
-        (r"`readonly: true`",
-         "a read-only brief: instruct the child it must not modify files or run "
-         "mutating commands"),
-        (r"`readonly: false`",
-         "full tool access"),
-        (r"- `readonly`: `true`",
-         "- read-only brief: instruct the child it must not modify files or run "
-         "mutating commands"),
-        (r"- `readonly`: `false` \(agent mode\)\.",
-         "- tool access: full."),
+        (r"`readonly: (?:true|false)` \(agent mode\)", "full tool access"),
+        (r"with `readonly: false` \(agent mode\)", "with full tool access"),
+        (
+            r"`readonly: true`",
+            "a read-only brief: instruct the child it must not modify files or run "
+            "mutating commands",
+        ),
+        (r"`readonly: false`", "full tool access"),
+        (
+            r"- `readonly`: `true`",
+            "- read-only brief: instruct the child it must not modify files or run "
+            "mutating commands",
+        ),
+        (r"- `readonly`: `false` \(agent mode\)\.", "- tool access: full."),
         (r"readonly/Ask mode", "a read-only tool restriction"),
         (r"Readonly/Ask mode", "A read-only tool restriction"),
-        (r"readonly strips MCPs?",
-         "read-only modes strip MCPs" if is_prime else "denied tools strip MCPs"),
-        (r"Readonly strips MCPs",
-         "Read-only modes strip MCPs" if is_prime else "Denied tools strip MCPs"),
-        (r"one readonly judge subagent",
-         "one read-only judge child" if is_prime else "one read-only judge subagent"),
-        (r"Always `environment: \"cloud\"` unless the task needs this machine",
-         "Always a spawned child (a daemon session via `rlm.create_session` when the work must outlive this session) unless the task needs this machine"
-         if is_prime else
-         "Always a detached background subagent session unless the task needs this machine"),
+        (
+            r"readonly strips MCPs?",
+            "read-only modes strip MCPs" if is_prime else "denied tools strip MCPs",
+        ),
+        (
+            r"Readonly strips MCPs",
+            "Read-only modes strip MCPs" if is_prime else "Denied tools strip MCPs",
+        ),
+        (
+            r"one readonly judge subagent",
+            "one read-only judge child" if is_prime else "one read-only judge subagent",
+        ),
+        (
+            r"Always `environment: \"cloud\"` unless the task needs this machine",
+            "Always a spawned child (a daemon session via `rlm.create_session` when the work must outlive this session) unless the task needs this machine"
+            if is_prime
+            else "Always a detached background subagent session unless the task needs this machine",
+        ),
         (r"`environment: \"cloud\"`, ", ""),
-        (r"`environment: \"cloud\"`",
-         "a resident/daemon child" if is_prime else "a detached session"),
-        (r"`environment: \"local\"`",
-         "a child on this machine" if is_prime else "a local task"),
-        (r"Cursor cloud agent",
-         "resident depth-0 session (`rlm.create_session`)" if is_prime else
-         "dedicated background subagent session"),
+        (
+            r"`environment: \"cloud\"`",
+            "a resident/daemon child" if is_prime else "a detached session",
+        ),
+        (
+            r"`environment: \"local\"`",
+            "a child on this machine" if is_prime else "a local task",
+        ),
+        (
+            r"Cursor cloud agent",
+            "resident depth-0 session (`rlm.create_session`)"
+            if is_prime
+            else "dedicated background subagent session",
+        ),
         # cloud workers / spawns / topology (swarm, orchestrate, multi-phase-plan)
-        (r"Fan out N parallel cloud workers\.",
-         "Fan out N parallel workers."),
+        (r"Fan out N parallel cloud workers\.", "Fan out N parallel workers."),
         (r"parallel cloud workers", "parallel workers"),
-        (r"N is total workers, not the cloud concurrency limit\.",
-         "N is total workers, not a harness concurrency limit."),
-        (r"Use a local task only when the worker needs access to something on the user's computer\.",
-         "Stay on this machine only when the worker needs local access; otherwise spawn normally."),
-        (r"When a worker must start from a non-default pushed branch, pass `cloud_base_branch`\.",
-         "When a worker must start from a non-default pushed branch, start it on that branch if the harness supports it; otherwise say so and stay on the default branch."),
-        (r"`cloud_base_branch`",
-         "a base-branch override the harness supports (else the default branch)"),
-        (r"Verbatim paste is for cloud spawns and every resume\.",
-         "Verbatim paste is for cross-session handoffs and every resume."),
-        (r"cloud spawns", "cross-session handoffs" if not is_prime else "daemon-session handoffs"),
-        (r"its spawn budget with the cloud default and the local exception list",
-         "its spawn budget with the default and the exception list"),
-        (r"Chain rebases run in cloud\.", "Keep chain rebases serialized on one worker."),
-        (r"Each live lane runs on its own cloud VM",
-         "Each live lane runs in its own worker/session"),
+        (
+            r"N is total workers, not the cloud concurrency limit\.",
+            "N is total workers, not a harness concurrency limit.",
+        ),
+        (
+            r"Use a local task only when the worker needs access to something on the user's computer\.",
+            "Stay on this machine only when the worker needs local access; otherwise spawn normally.",
+        ),
+        (
+            r"When a worker must start from a non-default pushed branch, pass `cloud_base_branch`\.",
+            "When a worker must start from a non-default pushed branch, start it on that branch if the harness supports it; otherwise say so and stay on the default branch.",
+        ),
+        (
+            r"`cloud_base_branch`",
+            "a base-branch override the harness supports (else the default branch)",
+        ),
+        (
+            r"Verbatim paste is for cloud spawns and every resume\.",
+            "Verbatim paste is for cross-session handoffs and every resume.",
+        ),
+        (
+            r"cloud spawns",
+            "cross-session handoffs" if not is_prime else "daemon-session handoffs",
+        ),
+        (
+            r"its spawn budget with the cloud default and the local exception list",
+            "its spawn budget with the default and the exception list",
+        ),
+        (
+            r"Chain rebases run in cloud\.",
+            "Keep chain rebases serialized on one worker.",
+        ),
+        (
+            r"Each live lane runs on its own cloud VM",
+            "Each live lane runs in its own worker/session",
+        ),
         (r"cloud VM", "worker" if not is_prime else "session"),
         (r"cloud agents", "resident sessions" if is_prime else "background sessions"),
         (r"cloud agent", "resident session" if is_prime else "background session"),
         (r"Cloud agents", "Resident sessions" if is_prime else "Background sessions"),
         (r"Cloud agent", "Resident session" if is_prime else "Background session"),
-        (r"in local and cloud roots", "in interactive and daemon sessions" if is_prime else
-         "in local and background sessions"),
+        (
+            r"in local and cloud roots",
+            "in interactive and daemon sessions"
+            if is_prime
+            else "in local and background sessions",
+        ),
         # ---- AskQuestion ----------------------------------------------------------
-        (r"Prefer `?AskQuestion`? over free text\.",
-         "Prefer a structured choice prompt over free text where the UI offers one."),
-        (r"confirm intent with `AskQuestion`",
-         "confirm intent with a structured question"),
-        (r"Use the `AskQuestion` tool \(structured multi-choice\) rather than asking the user to type from scratch\.",
-         "Use a structured multi-choice question where the harness UI offers one rather "
-         "than asking the user to type from scratch."),
-        (r"About to `AskQuestion`",
-         "About to ask the human a structured question"),
+        (
+            r"Prefer `?AskQuestion`? over free text\.",
+            "Prefer a structured choice prompt over free text where the UI offers one.",
+        ),
+        (
+            r"confirm intent with `AskQuestion`",
+            "confirm intent with a structured question",
+        ),
+        (
+            r"Use the `AskQuestion` tool \(structured multi-choice\) rather than asking the user to type from scratch\.",
+            "Use a structured multi-choice question where the harness UI offers one rather "
+            "than asking the user to type from scratch.",
+        ),
+        (r"About to `AskQuestion`", "About to ask the human a structured question"),
         (r"`AskQuestion`", "a structured question"),
         (r"AskQuestion", "a structured question"),
         # ---- poteto-agent lookup: no .cursor-plugin dir on these harnesses ----
-        (r"If more than one file matches, use the copy whose `\.cursor-plugin/plugin\.json` has the highest `version`\.",
-         "If more than one file matches, use the copy under the active config directory."),
+        (
+            r"If more than one file matches, use the copy whose `\.cursor-plugin/plugin\.json` has the highest `version`\.",
+            "If more than one file matches, use the copy under the active config directory.",
+        ),
         # ---- make-bot-ui secret handoff: Cursor-only card ----------------------
-        (r"Do not accept the sender key in chat\. Send a secret-request, then stop\. That card is the whole turn\.",
-         "Do not accept the sender key in chat. The secret-request card is Cursor-only — pause and ask the user to store the key in the automation host out of band, then continue."),
-        (r"type: secret-request",
-         "type: secret-request (Cursor-only — collect the key out of band on other harnesses)"),
-        (r"SendToUser\n",
-         "SendToUser (Cursor-only card)\n"),
-        (r"The wake is a `\[routine\]` turn for that webhook routine\. It includes a `<webhook_event>` block with `headers` \(`content-type`, `user-agent`\), `body_digest` \(sha256\), `body`, and `timestamp_ms`\.",
-         "The wake is a webhook-triggered turn for that routine. On Cursor routines it includes a `<webhook_event>` block with `headers`, `body_digest` (sha256), `body`, and `timestamp_ms`; other hosts expose an equivalent payload."),
+        (
+            r"Do not accept the sender key in chat\. Send a secret-request, then stop\. That card is the whole turn\.",
+            "Do not accept the sender key in chat. The secret-request card is Cursor-only — pause and ask the user to store the key in the automation host out of band, then continue.",
+        ),
+        (
+            r"type: secret-request",
+            "type: secret-request (Cursor-only — collect the key out of band on other harnesses)",
+        ),
+        (r"SendToUser\n", "SendToUser (Cursor-only card)\n"),
+        (
+            r"The wake is a `\[routine\]` turn for that webhook routine\. It includes a `<webhook_event>` block with `headers` \(`content-type`, `user-agent`\), `body_digest` \(sha256\), `body`, and `timestamp_ms`\.",
+            "The wake is a webhook-triggered turn for that routine. On Cursor routines it includes a `<webhook_event>` block with `headers`, `body_digest` (sha256), `body`, and `timestamp_ms`; other hosts expose an equivalent payload.",
+        ),
         # ---- reflect transcript listing placeholder ----------------------------
-        (r"ls -t <agent-transcripts>/\*\.jsonl <agent-transcripts>/\*/\*\.jsonl <agent-transcripts>/\*/subagents/\*\.jsonl 2>/dev/null \| head -10",
-         "list recent session files in this session's transcript directory (see the harness notes for the store path)"),
+        (
+            r"ls -t <agent-transcripts>/\*\.jsonl <agent-transcripts>/\*/\*\.jsonl <agent-transcripts>/\*/subagents/\*\.jsonl 2>/dev/null \| head -10",
+            "list recent session files in this session's transcript directory (see the harness notes for the store path)",
+        ),
         # ---- poteto-help upstream disclaimer (ported verbatim upstream) --------
-        (r"pstack is built for Cursor\. Its skills use the Agent Skills format, so other tools can read them\. But most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn Cursor subagents with per-role models, and Custom Modes and `/loop` are Cursor features, so those parts may not work there\.",
-         ("pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto prime-agent (`rlm.spawn`, `pstack-models.md`, scheduled wakes), so the workflow skills work here. Custom Modes remain Cursor-only — invoke `/skill:poteto-mode` per task.")
-         if is_prime else
-         ("pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto opencode (the `task` tool, `pstack-models.md`, background watchers), so the workflow skills work here. Custom Modes remain Cursor-only — start each task with `/poteto-mode`.")),
-
+        (
+            r"pstack is built for Cursor\. Its skills use the Agent Skills format, so other tools can read them\. But most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn Cursor subagents with per-role models, and Custom Modes and `/loop` are Cursor features, so those parts may not work there\.",
+            (
+                "pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto prime-agent (`rlm.spawn`, `pstack-models.md`, scheduled wakes), so the workflow skills work here. Custom Modes remain Cursor-only — invoke `/skill:poteto-mode` per task."
+            )
+            if is_prime
+            else (
+                "pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto opencode (the `task` tool, `pstack-models.md`, background watchers), so the workflow skills work here. Custom Modes remain Cursor-only — start each task with `/poteto-mode`."
+            ),
+        ),
         # ---- /loop ---------------------------------------------------------------
-        (r"Cursor's `/loop` command \(a built-in, not a pstack skill\)",
-         "a heartbeat/scheduled wake (goals, schedules, `rlm-heartbeat`)" if is_prime else
-         "a re-armed wake (a background watcher task or repeated checks)"),
-        (r"Cursor's `/loop` command",
-         "a heartbeat/scheduled wake" if is_prime else "a re-armed wake"),
-        (r"Run `drive` and `background` under `/loop` in dynamic mode\.",
-         "Keep `drive` and `background` alive on a heartbeat or scheduled wake."
-         if is_prime else
-         "Keep `drive` and `background` alive on a re-armed wake."),
-        (r"Hold the watch under `/loop` in dynamic mode\.",
-         "Hold the watch on a scheduled wake." if is_prime else
-         "Hold the watch on a re-armed wake."),
-        (r"arm `/loop 1h` with a prompt that runs this tick",
-         "arm a 1-hour heartbeat/scheduled wake whose prompt runs this tick" if is_prime else
-         "arm a 1-hour re-wake (background task) whose prompt runs this tick"),
-        (r"`/loop` works in local and cloud roots\.",
-         "Scheduled wakes work in interactive and daemon sessions." if is_prime else
-         "Re-wakes work in interactive and background sessions."),
-        (r"`/loop` per component until the diff is zero\.",
-         "Re-check each component on a periodic wake until the diff is zero."),
+        (
+            r"Cursor's `/loop` command \(a built-in, not a pstack skill\)",
+            "a heartbeat/scheduled wake (goals, schedules, `rlm-heartbeat`)"
+            if is_prime
+            else "a re-armed wake (a background watcher task or repeated checks)",
+        ),
+        (
+            r"Cursor's `/loop` command",
+            "a heartbeat/scheduled wake" if is_prime else "a re-armed wake",
+        ),
+        (
+            r"Run `drive` and `background` under `/loop` in dynamic mode\.",
+            "Keep `drive` and `background` alive on a heartbeat or scheduled wake."
+            if is_prime
+            else "Keep `drive` and `background` alive on a re-armed wake.",
+        ),
+        (
+            r"Hold the watch under `/loop` in dynamic mode\.",
+            "Hold the watch on a scheduled wake."
+            if is_prime
+            else "Hold the watch on a re-armed wake.",
+        ),
+        (
+            r"arm `/loop 1h` with a prompt that runs this tick",
+            "arm a 1-hour heartbeat/scheduled wake whose prompt runs this tick"
+            if is_prime
+            else "arm a 1-hour re-wake (background task) whose prompt runs this tick",
+        ),
+        (
+            r"`/loop` works in local and cloud roots\.",
+            "Scheduled wakes work in interactive and daemon sessions."
+            if is_prime
+            else "Re-wakes work in interactive and background sessions.",
+        ),
+        (
+            r"`/loop` per component until the diff is zero\.",
+            "Re-check each component on a periodic wake until the diff is zero.",
+        ),
         (r"/loop 1h", "a 1h periodic wake" if not is_prime else "a 1h scheduled wake"),
         (r"`/loop`", "a periodic wake" if not is_prime else "a scheduled wake"),
         (r"/loop\b", "a periodic wake" if not is_prime else "a scheduled wake"),
         # ---- poteto-help built-ins line ---------------------------------------
-        (r"`/loop` and `/create-skill` are Cursor built-ins\.",
-         ("a scheduled wake and `skill-creator` are the harness equivalents.")
-         if is_prime else
-         "a periodic wake and the `authoring-a-skill` playbook conventions are the harness equivalents."),
+        (
+            r"`/loop` and `/create-skill` are Cursor built-ins\.",
+            ("a scheduled wake and `skill-creator` are the harness equivalents.")
+            if is_prime
+            else "a periodic wake and the `authoring-a-skill` playbook conventions are the harness equivalents.",
+        ),
         # ---- model slugs: effort-ladder REGEXES (never leak new suffixes) -----
         # Cursor slugs embed effort (-max/-xhigh/-high/-medium/-low, -fast).
         # Ports are slug-free: every role defaults to `inherit-parent`.
@@ -461,57 +700,104 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (r"`anthropic/claude-(?:haiku|sonnet|opus)-4-5`", "`inherit-parent`"),
         (r"`openai/gpt-5\.1`", "`inherit-parent`"),
         # panel/family fallback prose: Cursor families mean nothing here
-        (r"Families go by prefix: `claude-\*`, and `grok-\*` with `cursor-grok-\*` and `composer-\*`\.?",
-         "Families go by the role line; unlisted families fall back to the parent model."),
-        (r"A refused `composer-\*` entry runs on (`anthropic/claude-haiku-4-5`|Reviewer B's default|its family's default|`grok-4\.7-xhigh-fast`|`inherit-parent`)\.",
-         "A refused entry runs on the parent model."),
-        (r"A refused `composer-\*` entry runs on [^.\n]*\.",
-         "A refused entry runs on the parent model."),
-        (r"If the `task` tool rejects a slug, use the default and say so\.",
-         "If the `task` tool rejects a role value, omit `model` so that seat runs on the parent model and say so."),
-        (r"If the `rlm\.spawn` API rejects a slug, use the default and say so\.",
-         "If the `rlm.spawn` API rejects a role value, omit `model` so that seat runs on the parent model and say so."),
-        (r"If it rejects the default, use the closest valid slug of the same family from its error message\.",
-         "If it rejects that, omit `model` so it runs on the parent model and say so."),
+        (
+            r"Families go by prefix: `claude-\*`, and `grok-\*` with `cursor-grok-\*` and `composer-\*`\.?",
+            "Families go by the role line; unlisted families fall back to the parent model.",
+        ),
+        (
+            r"A refused `composer-\*` entry runs on (`anthropic/claude-haiku-4-5`|Reviewer B's default|its family's default|`grok-4\.7-xhigh-fast`|`inherit-parent`)\.",
+            "A refused entry runs on the parent model.",
+        ),
+        (
+            r"A refused `composer-\*` entry runs on [^.\n]*\.",
+            "A refused entry runs on the parent model.",
+        ),
+        (
+            r"If the `task` tool rejects a slug, use the default and say so\.",
+            "If the `task` tool rejects a role value, omit `model` so that seat runs on the parent model and say so.",
+        ),
+        (
+            r"If the `rlm\.spawn` API rejects a slug, use the default and say so\.",
+            "If the `rlm.spawn` API rejects a role value, omit `model` so that seat runs on the parent model and say so.",
+        ),
+        (
+            r"If it rejects the default, use the closest valid slug of the same family from its error message\.",
+            "If it rejects that, omit `model` so it runs on the parent model and say so.",
+        ),
         (r" and fast or standard speed", ""),
-        (r"A refused `composer-\*` entry runs on `grok-4\.7-xhigh-fast`\.",
-         "A refused entry runs on the parent model."),
-        (r"With no family match, use `claude-opus-5-5-xhigh`\.?",
-         "With no family match, use the parent model."),
-        (r"With no family match, use `inherit-parent`\.?",
-         "With no family match, use the parent model."),
-        (r"If it rejects a default, use the closest valid slug of the same family from its error message\.",
-         "If it rejects the role value, omit `model` so the seat runs on the parent model and say so."),
-        (r"If the (`task`|`` `rlm\.spawn` ``|`rlm\.spawn` API|Task) tool rejects a configured entry, run that (seat|reviewer) on its family's (table default|default) and say so\.",
-         "If the spawn API rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
-        (r"If the `task` tool rejects a configured entry, run that seat on its family's default and say so\.",
-         "If the `task` tool rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
-        (r"If the `rlm\.spawn` API rejects a configured entry, run that seat on its family's default and say so\.",
-         "If the `rlm.spawn` API rejects a configured entry, omit `model` so that seat runs on the parent model and say so."),
-        (r"If the `task` tool rejects a configured entry, run that reviewer on its family's table default and say so\.",
-         "If the `task` tool rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so."),
-        (r"If the `rlm\.spawn` API rejects a configured entry, run that reviewer on its family's table default and say so\.",
-         "If the `rlm.spawn` API rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so."),
-        (r"spawn with the closest equivalent from the valid slugs in its error message \(prefer the same family and reasoning tier\), and open a separate PR to update the default table\. Do not block the (review|work) on the slug issue\.",
-         "omit `model` so it runs on the parent model and continue. Do not block the \\1 on the model issue."),
-        (r"., and open a separate PR to update the default table\. Do not block the review on the slug issue\.",
-         " and continue; do not block the review on the model issue."),
-        (r"default to one each on `inherit-parent` and `inherit-parent`",
-         "default to `inherit-parent` for each seat (omit `model`)"),
-        (r"choose from `inherit-parent` and `inherit-parent`",
-         "use `inherit-parent` (omit `model`) unless a role line sets models"),
-        (r"use `inherit-parent` and `inherit-parent`",
-         "use `inherit-parent` for each runner (omit `model`)"),
-        (r"Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the \*\*poteto-mode\*\* skill\.",
-         "Pick each subagent's thinking/reasoning level for the job, per the Subagents section of the **poteto-mode** skill."),
+        (
+            r"A refused `composer-\*` entry runs on `grok-4\.7-xhigh-fast`\.",
+            "A refused entry runs on the parent model.",
+        ),
+        (
+            r"With no family match, use `claude-opus-5-5-xhigh`\.?",
+            "With no family match, use the parent model.",
+        ),
+        (
+            r"With no family match, use `inherit-parent`\.?",
+            "With no family match, use the parent model.",
+        ),
+        (
+            r"If it rejects a default, use the closest valid slug of the same family from its error message\.",
+            "If it rejects the role value, omit `model` so the seat runs on the parent model and say so.",
+        ),
+        (
+            r"If the (`task`|`` `rlm\.spawn` ``|`rlm\.spawn` API|Task) tool rejects a configured entry, run that (seat|reviewer) on its family's (table default|default) and say so\.",
+            "If the spawn API rejects a configured entry, omit `model` so that seat runs on the parent model and say so.",
+        ),
+        (
+            r"If the `task` tool rejects a configured entry, run that seat on its family's default and say so\.",
+            "If the `task` tool rejects a configured entry, omit `model` so that seat runs on the parent model and say so.",
+        ),
+        (
+            r"If the `rlm\.spawn` API rejects a configured entry, run that seat on its family's default and say so\.",
+            "If the `rlm.spawn` API rejects a configured entry, omit `model` so that seat runs on the parent model and say so.",
+        ),
+        (
+            r"If the `task` tool rejects a configured entry, run that reviewer on its family's table default and say so\.",
+            "If the `task` tool rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so.",
+        ),
+        (
+            r"If the `rlm\.spawn` API rejects a configured entry, run that reviewer on its family's table default and say so\.",
+            "If the `rlm.spawn` API rejects a configured entry, omit `model` so that reviewer runs on the parent model and say so.",
+        ),
+        (
+            r"spawn with the closest equivalent from the valid slugs in its error message \(prefer the same family and reasoning tier\), and open a separate PR to update the default table\. Do not block the (review|work) on the slug issue\.",
+            "omit `model` so it runs on the parent model and continue. Do not block the \\1 on the model issue.",
+        ),
+        (
+            r"., and open a separate PR to update the default table\. Do not block the review on the slug issue\.",
+            " and continue; do not block the review on the model issue.",
+        ),
+        (
+            r"default to one each on `inherit-parent` and `inherit-parent`",
+            "default to `inherit-parent` for each seat (omit `model`)",
+        ),
+        (
+            r"choose from `inherit-parent` and `inherit-parent`",
+            "use `inherit-parent` (omit `model`) unless a role line sets models",
+        ),
+        (
+            r"use `inherit-parent` and `inherit-parent`",
+            "use `inherit-parent` for each runner (omit `model`)",
+        ),
+        (
+            r"Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the \*\*poteto-mode\*\* skill\.",
+            "Pick each subagent's thinking/reasoning level for the job, per the Subagents section of the **poteto-mode** skill.",
+        ),
         # exact legacy maps (kept last so regexes above win)
         *[(re.escape(k), v) for k, v in CURSOR_SLUGS.items()],
         # ---- generic create-skill fallback (after specific sentence rules) ----
-        (r"`create-skill`", "`skill-creator`" if is_prime else "the `authoring-a-skill` playbook"),
+        (
+            r"`create-skill`",
+            "`skill-creator`" if is_prime else "the `authoring-a-skill` playbook",
+        ),
         (r"\bcreate-skill\b", "skill-creator" if is_prime else "authoring-a-skill"),
         # ---- forge/watch ------------------------------------------------------------
-        (r"re-read this playbook from trunk with `git show origin/main:pstack/",
-         "re-read this playbook from your installed pstack copy at `"),
+        (
+            r"re-read this playbook from trunk with `git show origin/main:pstack/",
+            "re-read this playbook from your installed pstack copy at `",
+        ),
     ]
     return rules
 
@@ -522,7 +808,9 @@ def rewrite_slashes(text: str, target: str) -> str:
     # to the static PSTACK_SKILLS snapshot), so new upstream skills get
     # /skill:-style rewrites without edits here.
     skill_names = ACTIVE_SKILLS or PSTACK_SKILLS
-    names = "|".join(sorted(re.escape(n) for n in (ALL_SLASH - PSTACK_SKILLS) | skill_names))
+    names = "|".join(
+        sorted(re.escape(n) for n in (ALL_SLASH - PSTACK_SKILLS) | skill_names)
+    )
     # 1. Exact backticked `/skill`: consume both backticks so replacements never nest.
     pat_bt = re.compile(r"`/(" + names + r")`(?!\w)")
     # 2. Bare `/skill` (including inside a longer backticked span like
@@ -539,12 +827,14 @@ def rewrite_slashes(text: str, target: str) -> str:
     # inject inner backticks that break the span.
     out_lines = []
     for line in text.splitlines(keepends=True):
+
         def _sub_bare(m: re.Match, _line: str = line) -> str:
             rep = slash_repl(target, m.group(1))
-            before = _line[:m.start()]
+            before = _line[: m.start()]
             if before.count("`") % 2 == 1:
                 return rep.replace("`", "")
             return rep
+
         out_lines.append(pat_bare.sub(_sub_bare, line))
     return "".join(out_lines)
 
@@ -560,11 +850,15 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
     m = FM_RE.match(text)
     if not m:
         return {}, text
-    return yaml.safe_load(m.group(1)), text[m.end():]
+    return yaml.safe_load(m.group(1)), text[m.end() :]
 
 
 def dump_frontmatter(fm: dict) -> str:
-    return "---\n" + yaml.safe_dump(fm, sort_keys=False, default_flow_style=False).strip() + "\n---\n"
+    return (
+        "---\n"
+        + yaml.safe_dump(fm, sort_keys=False, default_flow_style=False).strip()
+        + "\n---\n"
+    )
 
 
 # Skills directly invocable by the user. Everything else is gated behind
@@ -605,7 +899,9 @@ def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
         meta = {}
         for k in ("mode", "icon", "color", "reminder", "disable-model-invocation"):
             if k in fm:
-                meta[k.replace("-", "_")] = str(fm[k]).lower() if isinstance(fm[k], bool) else str(fm[k])
+                meta[k.replace("-", "_")] = (
+                    str(fm[k]).lower() if isinstance(fm[k], bool) else str(fm[k])
+                )
         if gated:
             meta["disable_model_invocation"] = "true"
         if meta:
@@ -636,33 +932,52 @@ AGENT_DESC_PERSISTENT = (
 # policy continues the same subagent. Exact-text regexes; a miss is reported
 # by check_persistent_rewrites() so an upstream rewording cannot slip by.
 PERSISTENT_PLAYBOOK_REWRITES = [
-    (r"Unless the operator names a path, write the file under the agent store's `docs/`\.",
-     "Unless the operator names a path, write the file under `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/`, never inside the project."),
-    (r"Keep it at `decisions\.tsv` in the work dir, or `\.audit/<task-slug>\.tsv` when several efforts run at once, and leave it out of git\.",
-     "Keep it at `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/decisions.tsv`, outside the project, and say its path in the reply."),
-    (r"Commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result\.",
-     "Copy it into the project or commit it only when the user asks."),
-    (r"figure-it-out's work is usually ambitious enough to commit the trail so the reviewer can read it in the PR\.",
-     "Keep the trail outside the project and offer to commit it if the reviewer needs it."),
-    (r"Spawn a fresh owner rather than chaining interrupts\.",
-     "Keep the same owner across rounds and send it every directive since its last turn, "
-     "rather than chaining interrupts."),
-    (r"Never resume-chain a brief\. Respawn fresh with consolidated scope\.",
-     "Continue the same worker for a related round, sending it the consolidated scope "
-     "(the brief plus every directive since its last turn). Respawn fresh only when it cannot be resumed."),
-    (r"`verifier-blocked` is not a pass\. Respawn when the environment heals\.",
-     "`verifier-blocked` is not a pass. Continue the same verifier when the environment heals."),
-    (r"and respawn that worker once\.",
-     "and send that worker one correction request in its existing session."),
+    (
+        r"Unless the operator names a path, write the file under the agent store's `docs/`\.",
+        "Unless the operator names a path, write the file under `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/`, never inside the project.",
+    ),
+    (
+        r"Keep it at `decisions\.tsv` in the work dir, or `\.audit/<task-slug>\.tsv` when several efforts run at once, and leave it out of git\.",
+        "Keep it at `${TMPDIR:-/tmp}/pstack/<repo>-<task-slug>/decisions.tsv`, outside the project, and say its path in the reply.",
+    ),
+    (
+        r"Commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result\.",
+        "Copy it into the project or commit it only when the user asks.",
+    ),
+    (
+        r"figure-it-out's work is usually ambitious enough to commit the trail so the reviewer can read it in the PR\.",
+        "Keep the trail outside the project and offer to commit it if the reviewer needs it.",
+    ),
+    (
+        r"Spawn a fresh owner rather than chaining interrupts\.",
+        "Keep the same owner across rounds and send it every directive since its last turn, "
+        "rather than chaining interrupts.",
+    ),
+    (
+        r"Never resume-chain a brief\. Respawn fresh with consolidated scope\.",
+        "Continue the same worker for a related round, sending it the consolidated scope "
+        "(the brief plus every directive since its last turn). Respawn fresh only when it cannot be resumed.",
+    ),
+    (
+        r"`verifier-blocked` is not a pass\. Respawn when the environment heals\.",
+        "`verifier-blocked` is not a pass. Continue the same verifier when the environment heals.",
+    ),
+    (
+        r"and respawn that worker once\.",
+        "and send that worker one correction request in its existing session.",
+    ),
 ]
 
 
 def check_persistent_rewrites(src: Path) -> None:
     """Warn when an upstream line targeted by PERSISTENT_PLAYBOOK_REWRITES no longer exists."""
-    corpus = "\n".join(p.read_text(encoding="utf-8") for p in (src / "skills").rglob("*.md"))
+    corpus = "\n".join(
+        p.read_text(encoding="utf-8") for p in (src / "skills").rglob("*.md")
+    )
     for pat, _ in PERSISTENT_PLAYBOOK_REWRITES:
         if not re.search(pat, corpus):
             warn(f"persistent-subagent rewrite matched nothing: {pat}")
+
 
 # Inserted before "## Non-negotiables": the visible per-turn contract. The
 # triggers below it say what to load; this says when, and makes skipping show.
@@ -681,35 +996,47 @@ The only exemption is a one-line factual answer or a trivial mechanical edit. Wr
 
 """
 
-POTETO_SUBAGENTS_OC = """**Spawn the `poteto-agent` subagent for any delegate you launch inside a playbook step** (code-writing delegates, ad-hoc helpers): it is installed as a `mode: subagent` agent, so a `task` call with subagent type `poteto-agent` gets the full style. `/poteto-mode` and `poteto-agent` route through the same body of rules. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own subagent mix for diverse-model review; respect what the skill prescribes, don't override to `poteto-agent`.
+POTETO_SUBAGENTS_OC = (
+    """**Spawn the `poteto-agent` subagent for any delegate you launch inside a playbook step** (code-writing delegates, ad-hoc helpers): it is installed as a `mode: subagent` agent, so a `task` call with subagent type `poteto-agent` gets the full style. `/poteto-mode` and `poteto-agent` route through the same body of rules. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own subagent mix for diverse-model review; respect what the skill prescribes, don't override to `poteto-agent`.
 
 **Defaults for every `task` call.** Prefer parallel spawns: launch independent delegates in one message and keep the main thread on summaries. Pass file pointers, not inlined context. Omit `model` unless a role line in `pstack-models.md` sets one — the default for every role is `inherit-parent`, so delegates run on the parent model out of the box with zero hard-coded slugs. Define per-role models once via `/setup-pstack` (it detects your `opencode models` slugs and writes them into `pstack-models.md`); a role with no line keeps `inherit-parent`, and `auto` is an alias for it. Code delegates tier by difficulty only when roles are configured: the hardest changes go to your strongest judgment model, trivial edits to the fast model. Per-role lines override the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-""" + PERSISTENT_SUBAGENTS_OC
+"""
+    + PERSISTENT_SUBAGENTS_OC
+)
 
-POTETO_SUBAGENTS_PRIME = """**Spawn every delegate inside a playbook step as an `rlm.spawn` child whose prompt opens with the poteto-agent spec**: `You are operating as poteto-mode's full agent style. Read the poteto-mode skill's SKILL.md in full before doing any work, including its inline Principles index. Navigate to a leaf principle-* skill whenever you apply that principle.` The same paragraph is kept at `agents/poteto-agent.md` in this package. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own model mix for diverse-model review; respect what the skill prescribes.
+POTETO_SUBAGENTS_PRIME = (
+    """**Spawn every delegate inside a playbook step as an `rlm.spawn` child whose prompt opens with the poteto-agent spec**: `You are operating as poteto-mode's full agent style. Read the poteto-mode skill's SKILL.md in full before doing any work, including its inline Principles index. Navigate to a leaf principle-* skill whenever you apply that principle.` The same paragraph is kept at `agents/poteto-agent.md` in this package. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own model mix for diverse-model review; respect what the skill prescribes.
 
 **Defaults for every `rlm.spawn` call.** Children run concurrently once spawned — fan out independent delegates, keep the main thread on summaries, and `rlm.collect` the results. Pass file pointers, not inlined context. Omit `model` unless a role line in `~/.prime/agent/pstack-models.md` sets one — the default for every role is `inherit-parent`, so children run on the parent model out of the box with zero hard-coded slugs. Define per-role models once via `/skill:setup-pstack` (it calls `rlm.find_models()` and writes them into `pstack-models.md`); `auto` is an alias for `inherit-parent`, and `thinking` defaults to the parent level. Code delegates tier by difficulty only when roles are configured: the hardest changes go to your strongest judgment model (higher `thinking`); trivial edits to the fast model. Per-role lines override the model choices in the routed skills. Each code playbook's configured model comes from its line (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`. For a standing fan-out with joins, gates, or per-item children, prefer `rlm.factory` machines over ad-hoc spawn loops; enable it once with `/factory on`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
-""" + PERSISTENT_SUBAGENTS_PRIME
+"""
+    + PERSISTENT_SUBAGENTS_PRIME
+)
 
 # Additional poteto-mode body tweaks per target (list of (old, {oc, prime})).
 POTETO_EDITS = [
-    ("Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).",
-     {"opencode": "Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the `authoring-a-skill` playbook's conventions for SKILL.md files.",
-      "prime-agent": "Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the `skill-creator` skill (prime-agent's built-in for authoring SKILL.md files)."}),
-    ("- Bug fix. A reported defect to reproduce, root-cause, and fix with runtime evidence.",
-     None),  # unchanged, anchor only
+    (
+        "Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).",
+        {
+            "opencode": "Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the `authoring-a-skill` playbook's conventions for SKILL.md files.",
+            "prime-agent": "Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the `skill-creator` skill (prime-agent's built-in for authoring SKILL.md files).",
+        },
+    ),
+    (
+        "- Bug fix. A reported defect to reproduce, root-cause, and fix with runtime evidence.",
+        None,
+    ),  # unchanged, anchor only
 ]
 
 HARNESS_NOTE = {
     "opencode": (
         "## Harness notes (opencode port)\n\n"
-        "- Skills load on demand through the `skill` tool; `/poteto-mode` and `/setup-pstack` are real commands installed by this port. Other `/name` mentions in the ported text mean \"load the `name` skill\".\n"
+        '- Skills load on demand through the `skill` tool; `/poteto-mode` and `/setup-pstack` are real commands installed by this port. Other `/name` mentions in the ported text mean "load the `name` skill".\n'
         "- Subagents run through the harness's subagent tool (`task` in stock opencode; some hosts name it `subagent`). Its returned session ID is what you pass to continue a persistent subagent. `poteto-agent` and `comment-sicko` are installed as `mode: subagent` agents, and `poteto` is installed as a `mode: primary` agent you can Tab to.\n"
         "- The model role table lives at `~/.config/opencode/pstack-models.md` (registered in `opencode.json` `instructions`); `/setup-pstack` writes it.\n"
         "- Models are slug-free by default: every role is `inherit-parent` (omit `model`) until you assign `provider/model` slugs via `/setup-pstack`. Skills never hard-code a model slug.\n"
@@ -773,7 +1100,7 @@ Every real slug written must be in the detected set. `inherit-parent` and `auto`
 
 ### 5. Write the file
 
-Write `~/.config/opencode/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Then ensure `~/.config/opencode/opencode.json` contains `\"{MODELS_FILE['opencode'].strip('`')}\"`-equivalent entry in its `instructions` array (add the file's absolute path if missing; leave any existing entries intact). Shape:
+Write `~/.config/opencode/pstack-models.md` with a `# budget` line naming the chosen label and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Then ensure `~/.config/opencode/opencode.json` contains `\"{MODELS_FILE["opencode"].strip("`")}\"`-equivalent entry in its `instructions` array (add the file's absolute path if missing; leave any existing entries intact). Shape:
 
 ```
 # pstack model configuration. One line per role. Delete a line to fall back to the skill default (inherit-parent).
@@ -893,6 +1220,7 @@ FILE_BODIES = {
 # Transform pipeline
 # ---------------------------------------------------------------------------
 
+
 def transform_markdown(text: str, target: str, relpath: str) -> str:
     for pat, repl in common_rewrites(target):
         text = pat.sub(repl, text) if hasattr(pat, "sub") else re.sub(pat, repl, text)
@@ -927,13 +1255,13 @@ def process_skill_dir(src: Path, dst: Path, target: str) -> list[str]:
             text = item.read_text(encoding="utf-8")
             text = text.replace(
                 'transcripts="$HOME/.cursor/projects/$slug/agent-transcripts"',
-                'transcripts="${PSTACK_TRANSCRIPTS_DIR:-$HOME/.cursor/projects/$slug/agent-transcripts}"'
+                'transcripts="${PSTACK_TRANSCRIPTS_DIR:-$HOME/.cursor/projects/$slug/agent-transcripts}"',
             )
             text = text.replace(
                 "# Transcripts dir: ~/.cursor/projects/<slugified-repo-path>/agent-transcripts.",
                 "# Transcripts dir defaults to Cursor's layout. Point PSTACK_TRANSCRIPTS_DIR at the\n"
                 "# harness's session store instead (e.g. ~/.prime/agent/sessions for prime-agent,\n"
-                "# ~/.local/share/opencode/storage for opencode)."
+                "# ~/.local/share/opencode/storage for opencode).",
             )
             out.write_text(text, encoding="utf-8")
             shutil.copystat(item, out)
@@ -956,7 +1284,7 @@ def rewrite_poteto_mode(body: str, target: str) -> str:
     # the following section never aborts the build.
     m = re.search(r"^## Subagents\b.*?(?=^## )", body, re.S | re.M)
     if m:
-        body = body[:m.start()] + "## Subagents\n\n" + repl + "\n\n" + body[m.end():]
+        body = body[: m.start()] + "## Subagents\n\n" + repl + "\n\n" + body[m.end() :]
     else:
         warn("'## Subagents' heading not found in poteto-mode; appending")
         body = body.rstrip() + "\n\n## Subagents\n\n" + repl + "\n"
@@ -1072,8 +1400,7 @@ def build_opencode(src: Path, dst: Path) -> None:
         body = transform_markdown(body, "opencode", f.name)
         desc = str(fm.get("description", f.stem)).strip().strip('"').strip("'")
         desc = transform_markdown(desc, "opencode", f.name)
-        new_fm = {"description": desc,
-                  "mode": "subagent"}
+        new_fm = {"description": desc, "mode": "subagent"}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in OC_AGENTS.items():
         write(dst / "agents" / name, content)
@@ -1097,8 +1424,7 @@ def build_prime(src: Path, dst: Path) -> None:
         body = transform_markdown(body, "prime-agent", f.name)
         desc = str(fm.get("description", f.stem)).strip().strip('"').strip("'")
         desc = transform_markdown(desc, "prime-agent", f.name)
-        new_fm = {"name": f.stem,
-                  "description": desc}
+        new_fm = {"name": f.stem, "description": desc}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in PRIME_PROMPTS.items():
         write(dst / "prompts" / name, content)
@@ -1270,6 +1596,7 @@ port applies.
 # Upstream fetch / stamping / overrides / drift report
 # ---------------------------------------------------------------------------
 
+
 def resolve_ref(ref: str) -> str:
     """Resolve a ref/branch/tag to a full commit sha via `git ls-remote`.
 
@@ -1306,10 +1633,11 @@ def fetch_upstream(ref: str, cache: Path) -> tuple[Path, str]:
     cache.mkdir(parents=True)
     root_prefix = f"plugins-{sha}/{UPSTREAM_SUBDIR}/"
     with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
-        members = [m for m in tf.getmembers()
-                   if m.name.startswith(root_prefix) and m.isfile()]
+        members = [
+            m for m in tf.getmembers() if m.name.startswith(root_prefix) and m.isfile()
+        ]
         for m in members:
-            m.name = m.name[len(root_prefix):]
+            m.name = m.name[len(root_prefix) :]
             tf.extract(m, cache, filter="data")
     return cache, sha
 
@@ -1338,7 +1666,9 @@ def _hash_tree(root: Path) -> dict[str, str]:
     out = {}
     for f in sorted(root.rglob("*")):
         if f.is_file():
-            out[str(f.relative_to(root))] = hashlib.sha256(f.read_bytes()).hexdigest()[:16]
+            out[str(f.relative_to(root))] = hashlib.sha256(f.read_bytes()).hexdigest()[
+                :16
+            ]
     return out
 
 
@@ -1353,7 +1683,11 @@ def drift_report(new_root: Path, old_root: Path) -> str:
         if not (added or removed or changed):
             continue
         lines.append(f"## {target}")
-        for label, group in (("added", added), ("removed", removed), ("changed", changed)):
+        for label, group in (
+            ("added", added),
+            ("removed", removed),
+            ("changed", changed),
+        ):
             if group:
                 lines.append(f"  {label} ({len(group)}):")
                 lines += [f"    {p}" for p in group]
@@ -1378,21 +1712,37 @@ def build_all(src: Path, dst: Path) -> None:
 def fail_if_strict(strict: bool) -> None:
     """Exit 1 when --strict is set and the build printed warnings."""
     if strict and WARNINGS:
-        sys.exit(f"{len(WARNINGS)} warning(s); a local rewrite no longer matches upstream")
+        sys.exit(
+            f"{len(WARNINGS)} warning(s); a local rewrite no longer matches upstream"
+        )
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--src", help="local pstack checkout (default: fetched cache)")
-    ap.add_argument("--dst", default=str(Path(__file__).resolve().parent),
-                    help="destination repo root (default: directory containing port.py)")
-    ap.add_argument("--fetch", action="store_true",
-                    help="download upstream pstack at --ref into .upstream/ and build from it")
-    ap.add_argument("--ref", default="main", help="upstream ref/tag/sha (default: main)")
-    ap.add_argument("--strict", action="store_true",
-                    help="exit 1 if any warning was printed (an upstream rewording broke a local rewrite)")
-    ap.add_argument("--check", action="store_true",
-                    help="regenerate to a temp dir and print a drift report (no writes)")
+    ap.add_argument(
+        "--dst",
+        default=str(Path(__file__).resolve().parent),
+        help="destination repo root (default: directory containing port.py)",
+    )
+    ap.add_argument(
+        "--fetch",
+        action="store_true",
+        help="download upstream pstack at --ref into .upstream/ and build from it",
+    )
+    ap.add_argument(
+        "--ref", default="main", help="upstream ref/tag/sha (default: main)"
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit 1 if any warning was printed (an upstream rewording broke a local rewrite)",
+    )
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="regenerate to a temp dir and print a drift report (no writes)",
+    )
     args = ap.parse_args()
     dst = Path(args.dst)
     cache = dst / ".upstream" / UPSTREAM_SUBDIR
@@ -1411,7 +1761,9 @@ def main() -> None:
         sha = sha_file.read_text().strip() if sha_file.exists() else "unknown"
         src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree, cached)"
     else:
-        sys.exit("no source: pass --fetch to download upstream or --src DIR for a local checkout")
+        sys.exit(
+            "no source: pass --fetch to download upstream or --src DIR for a local checkout"
+        )
 
     if args.check:
         with tempfile.TemporaryDirectory() as tmp:
