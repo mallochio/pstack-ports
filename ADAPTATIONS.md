@@ -31,7 +31,7 @@ port applies.
 | `/loop` recurring command | background task / watcher that re-arms (`scripts/watch-pr` covers GitHub PRs) | `rlm-heartbeat`, a goal, or a daemon schedule |
 | `Bugbot` PR review bot | forge-generic: "whatever bot posts review comments on your PRs" (kept as a glossary term) | same |
 | Cursor cloud agent / `environment: "cloud"` | dedicated background subagent session | resident depth-0 session (`rlm.create_session`) |
-| transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | harness session store (`~/.local/share/opencode/storage/`) | `~/.prime/agent/sessions/` |
+| transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | `poteto-mode/scripts/transcripts.py` exports this workspace's sessions via `opencode session list/export` (sessions live in `opencode.db`) | same script, reading `~/.prime/agent/sessions/*.jsonl` filtered by `cwd` |
 
 ## Externals kept conditional
 

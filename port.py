@@ -141,6 +141,21 @@ def slash_repl(target: str, name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+TRANSCRIPTS_SCRIPT = {
+    "opencode": "~/.config/opencode/skills/poteto-mode/scripts/transcripts.py",
+    "prime-agent": "~/.prime/agent/skills/poteto-mode/scripts/transcripts.py",
+}
+
+
+def transcript_command(target: str, days: int = 7) -> str:
+    skill_dir = "<poteto-mode skill dir>"
+    return (
+        f"Export this workspace's sessions with `python3 {skill_dir}/scripts/transcripts.py "
+        f"export --days {days}` and read the files it writes. Never pass `--all-workspaces` "
+        "unless the user asks; other workspaces hold unrelated private chats."
+    )
+
+
 def common_rewrites(target: str) -> list[tuple[str, str]]:
     is_prime = target == "prime-agent"
     task_call = r"`rlm\.spawn` call" if is_prime else "task call"
@@ -167,52 +182,15 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         (
             r"`~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>\.jsonl`[^.]*"
             r"(where `<slug>` is the workspace path with the leading slash dropped and each \"/\" turned into \"-\" \(so `/Users/you/proj` becomes `Users-you-proj`\))?\.\s*Every line is one chat message\.",
-            (
-                "the session transcript for this workspace under prime-agent's session "
-                "store (`~/.prime/agent/sessions/*.jsonl`). Every line is one session entry."
-            )
-            if is_prime
-            else (
-                "the session transcript for this workspace under the harness's session "
-                "store (opencode keeps sessions under `~/.local/share/opencode/storage/`; "
-                "locate this session's file rather than globbing every workspace)."
-            ),
+            "`python3 <poteto-mode skill dir>/scripts/transcripts.py export --days 7`. Every line is one chat message.",
         ),
         (
-            r"the active workspace's `agent-transcripts/` directory \(the system prompt names the path\. Do not glob across `~/.cursor/projects/\*/`, that crosses workspace boundaries and reads private chats from unrelated projects\)",
-            "this session's transcript directory (do not glob across "
-            "`~/.prime/agent/sessions/` entries outside this session — that crosses "
-            "workspace boundaries and reads private chats from unrelated projects)"
-            if is_prime
-            else "this session's transcript directory (do not glob across the harness's "
-            "other workspaces' session stores — that crosses workspace boundaries "
-            "and reads private chats from unrelated projects)",
+            r"Transcripts live at `~/.cursor/projects/<slug>/agent-transcripts/`[^\n]*",
+            transcript_command(target),
         ),
         (
             r"a cloud-agent URL",
             "a resident-session URL" if is_prime else "a background-session URL",
-        ),
-        (
-            r"the active workspace's `agent-transcripts/` directory",
-            "this session's transcript directory"
-            if not is_prime
-            else "`~/.prime/agent/sessions/`",
-        ),
-        (
-            r"local transcripts under `agent-transcripts/`",
-            "local session transcripts under `~/.prime/agent/sessions/`"
-            if is_prime
-            else "local transcripts under the harness's session store",
-        ),
-        (
-            r"`agent-transcripts/`",
-            "`~/.prime/agent/sessions/`" if is_prime else "the harness's session store",
-        ),
-        (
-            r"~/.cursor/projects/\*/",
-            "the harness's other workspaces' session stores"
-            if not is_prime
-            else "~/.prime/agent/sessions/ entries outside this session",
         ),
         (
             r"the Cursor dashboard",
@@ -268,12 +246,12 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         ),
         # ---- skills dirs --------------------------------------------------------
         (
-            r"\.cursor/skills/",
-            ".opencode/skills/" if not is_prime else ".prime/agent/skills/",
+            r"~/.cursor/skills/",
+            "~/.config/opencode/skills/" if not is_prime else "~/.prime/skills/",
         ),
         (
-            r"~/.cursor/skills/",
-            "~/.config/opencode/skills/" if not is_prime else "~/.prime/agent/skills/",
+            r"\.cursor/skills/",
+            ".opencode/skills/" if not is_prime else ".prime/skills/",
         ),
         (
             r"~/.cursor/plugins/",
@@ -376,6 +354,18 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
             r"`?subagent_type`?: ?`?\"?generalPurpose\"?`?",
             "a plain `rlm.spawn` child" if is_prime else "the `general` subagent",
         ),
+        (
+            r"subagent_type: \"generalPurpose\"",
+            "a plain `rlm.spawn` child" if is_prime else "the `general` subagent",
+        ),
+        (
+            r"A plain `\*` accept button saves each edit to its mapped path through the editor\. Every character is visible in the terminal as it is written\.",
+            "The harness's question tool accepts the selection and applies the requested changes.",
+        ),
+        (
+            r"Read of its `SKILL\.md` \(under `\.cursor/skills/`, `~/.cursor/skills/`, or `~/.cursor/plugins/`\)",
+            "read of its `SKILL.md` from a harness skill directory",
+        ),
         # bare `generalPurpose` with no subagent_type prefix (e.g. why skill)
         (
             r"is `generalPurpose` with",
@@ -418,7 +408,7 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
             r"`subagent_type: \"comment-sicko\"`|subagent_type: \"comment-sicko\"",
             "an `rlm.spawn` child whose prompt is `references/comment-sicko.md`"
             if is_prime
-            else '`subagent_type: "comment-sicko"`',
+            else "the `comment-sicko` subagent",
         ),
         (r"`subagent_type`:", "child spec:" if is_prime else "`subagent_type`:"),
         (
@@ -595,16 +585,16 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         ),
         (
             r"confirm intent with `AskQuestion`",
-            "confirm intent with a structured question",
+            "confirm intent with the harness's question tool",
         ),
         (
             r"Use the `AskQuestion` tool \(structured multi-choice\) rather than asking the user to type from scratch\.",
-            "Use a structured multi-choice question where the harness UI offers one rather "
+            "Use the harness's question tool for a structured multi-choice question rather "
             "than asking the user to type from scratch.",
         ),
         (r"About to `AskQuestion`", "About to ask the human a structured question"),
-        (r"`AskQuestion`", "a structured question"),
-        (r"AskQuestion", "a structured question"),
+        (r"`AskQuestion`", "the harness's question tool"),
+        (r"AskQuestion", "the harness's question tool"),
         # ---- poteto-agent lookup: no .cursor-plugin dir on these harnesses ----
         (
             r"If more than one file matches, use the copy whose `\.cursor-plugin/plugin\.json` has the highest `version`\.",
@@ -624,22 +614,42 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
             r"The wake is a `\[routine\]` turn for that webhook routine\. It includes a `<webhook_event>` block with `headers` \(`content-type`, `user-agent`\), `body_digest` \(sha256\), `body`, and `timestamp_ms`\.",
             "The wake is a webhook-triggered turn for that routine. On Cursor routines it includes a `<webhook_event>` block with `headers`, `body_digest` (sha256), `body`, and `timestamp_ms`; other hosts expose an equivalent payload.",
         ),
-        # ---- reflect transcript listing placeholder ----------------------------
+        # ---- transcript utility ------------------------------------------------
         (
             r"ls -t <agent-transcripts>/\*\.jsonl <agent-transcripts>/\*/\*\.jsonl <agent-transcripts>/\*/subagents/\*\.jsonl 2>/dev/null \| head -10",
-            "list recent session files in this session's transcript directory (see the harness notes for the store path)",
+            "run `python3 <poteto-mode skill dir>/scripts/transcripts.py list --days 7` and take the newest session",
         ),
-        # ---- poteto-help upstream disclaimer (ported verbatim upstream) --------
+        # ---- poteto-help harness description -----------------------------------
         (
-            r"pstack is built for Cursor\. Its skills use the Agent Skills format, so other tools can read them\. But most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn Cursor subagents with per-role models, and Custom Modes and `/loop` are Cursor features, so those parts may not work there\.",
+            r"(?m)^pstack is built for Cursor,.*\n\s*\nOther tools can read the skills,.*$",
             (
-                "pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto prime-agent (`rlm.spawn`, `pstack-models.md`, scheduled wakes), so the workflow skills work here. Custom Modes remain Cursor-only — invoke `/skill:poteto-mode` per task."
+                "This is the prime-agent port. Install it with `./install.sh` from the pstack-ports repo. Sync upstream changes with `uv run --with pyyaml python3 port.py --fetch`."
             )
             if is_prime
             else (
-                "pstack upstream is built for Cursor. This port already maps its subagent, model, and wake mechanics onto opencode (the `task` tool, `pstack-models.md`, background watchers), so the workflow skills work here. Custom Modes remain Cursor-only — start each task with `/poteto-mode`."
+                "This is the opencode port. Install it with `./install.sh` from the pstack-ports repo. Sync upstream changes with `uv run --with pyyaml python3 port.py --fetch`."
             ),
         ),
+        (
+            r"- Enter on `/poteto-mode` attaches the skill to one message\. It fades as the chat moves on\.\s*\n- Option\+Enter on Mac or Alt\+Enter on Windows, or Use as Mode from the skill entry, makes it a Custom Mode\. It stays in context every turn until the user exits the mode, and it stays out of casual turns\.\s*\n- Cursor's docs list Custom Modes in the Agents Window and the CLI\. Elsewhere, start each new task with `/poteto-mode`\.",
+            "- In opencode, select the `poteto` primary agent with Tab, or start a task with `/poteto-mode`."
+            if not is_prime
+            else "- In prime-agent, start a task with `/skill:poteto-mode` or use the `/poteto` prompt.",
+        ),
+        (
+            r"Link \[Cursor's skills docs\]\(https://cursor\.com/docs/skills\) when this comes up\.",
+            "Link the [opencode skills docs](https://opencode.ai/docs/skills/) when this comes up."
+            if not is_prime
+            else "Link the [prime-agent skills docs](https://docs.pi.dev/skills) when this comes up.",
+        ),
+        (
+            r"spawn it with `subagent_type: \"poteto-agent\"`",
+            "spawn it with the `poteto-agent` subagent"
+            if not is_prime
+            else "spawn it with `rlm.spawn` and prepend the `poteto-agent` spec",
+        ),
+        (r"\bthe the\b", "the"),
+        (r"\bplugin plugin\b", "plugin"),
         # ---- /loop ---------------------------------------------------------------
         (
             r"Cursor's `/loop` command \(a built-in, not a pstack skill\)",
@@ -1222,10 +1232,167 @@ FILE_BODIES = {
 # ---------------------------------------------------------------------------
 
 
+def rewrite_source_specific(text: str, target: str, relpath: str) -> str:
+    if relpath == "poteto-help/SKILL.md":
+        description = (
+            "This is the prime-agent port. Install it with `./install.sh` from the pstack-ports repo. "
+            "Sync upstream changes with `uv run --with pyyaml python3 port.py --fetch`."
+            if target == "prime-agent"
+            else "This is the opencode port. Install it with `./install.sh` from the pstack-ports repo. "
+            "Sync upstream changes with `uv run --with pyyaml python3 port.py --fetch`."
+        )
+        text = re.sub(
+            r"(?m)^pstack is built for Cursor,.*\n\s*\nOther tools can read the skills,.*$",
+            description,
+            text,
+        )
+        activation = (
+            "- In prime-agent, start a task with `/skill:poteto-mode` or use the `/poteto` prompt."
+            if target == "prime-agent"
+            else "- In opencode, select the `poteto` primary agent with Tab, or start a task with `/poteto-mode`."
+        )
+        text = re.sub(
+            r"(?ms)^Whether `/poteto-mode` stays on depends.*?^Link \[Cursor's skills docs\].*?$",
+            activation,
+            text,
+        )
+        docs = (
+            "Link the [prime-agent skills docs](https://docs.pi.dev/skills) when this comes up."
+            if target == "prime-agent"
+            else "Link the [opencode skills docs](https://opencode.ai/docs/skills/) when this comes up."
+        )
+        text = text.replace(
+            "Link [Cursor's skills docs](https://cursor.com/docs/skills) when this comes up.",
+            docs,
+        )
+        spawn = (
+            "spawn it with `rlm.spawn` and prepend the `poteto-agent` spec"
+            if target == "prime-agent"
+            else "spawn it with the `poteto-agent` subagent"
+        )
+        text = text.replace('spawn it with `subagent_type: "poteto-agent"`', spawn)
+
+    replacements = {
+        "recall/SKILL.md": (
+            (
+                'Transcripts live at `~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>.jsonl`, where `<slug>` is the workspace path with the leading slash dropped and each "/" turned into "-" (so `/Users/you/proj` becomes `Users-you-proj`). Every line is one chat message.',
+                "Export this workspace's transcripts with `python3 <poteto-mode skill dir>/scripts/transcripts.py export --days 7`. It writes one markdown file per session and prints the paths.",
+            ),
+        ),
+        "reflect/SKILL.md": (
+            (
+                "Before fanning out, find this conversation's transcript in the `agent-transcripts/` directory the system prompt names. Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.",
+                "Before fanning out, find this conversation's transcript in this workspace's `scripts/transcripts.py` export. Do not glob across other workspace transcript directories. That crosses workspace boundaries and reads private chats from unrelated projects.",
+            ),
+            (
+                "ls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10",
+                "python3 <poteto-mode skill dir>/scripts/transcripts.py list --days 7",
+            ),
+            (
+                "That covers the legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`) layouts. For each candidate, read the first JSONL line. Take the file whose `message.content[0].text` contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.",
+                "The newest session is usually this one. Export it with `python3 <poteto-mode skill dir>/scripts/transcripts.py export <ID>` and confirm its first `## User` block matches this conversation's opening prompt. If none matches, pass a tight digest of the session instead.",
+            ),
+        ),
+        "automate-me/SKILL.md": (
+            (
+                "Locate the active workspace's transcripts before fanning out. The system prompt names the workspace's `agent-transcripts/` directory. Use only that path. Don't glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.",
+                "Locate the active workspace's transcripts before fanning out. Export them with `scripts/transcripts.py`. Use only this workspace. Do not read other workspace transcript directories. That crosses workspace boundaries and reads private chats from unrelated projects.",
+            ),
+        ),
+        "show-me-your-work/SKILL.md": (
+            (
+                "Read this run's transcript under the active workspace's `agent-transcripts/` directory (the system prompt names the path). Don't glob across `~/.cursor/projects/*/`. That reads unrelated private chats.",
+                "Read this run's transcript with `scripts/transcripts.py` from the active workspace. Don't export other workspaces' sessions. That reads unrelated private chats.",
+            ),
+        ),
+        "poteto-mode/playbooks/eval.md": (
+            (
+                "under the active workspace's `agent-transcripts/` directory (the system prompt names this path). Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.",
+                "in the active workspace's `scripts/transcripts.py` export. Do not glob across other workspace transcript directories. That crosses workspace boundaries and reads private chats from unrelated projects.",
+            ),
+        ),
+        "poteto-mode/playbooks/orchestrate.md": (
+            (
+                "under `agent-transcripts/`.",
+                "with `scripts/transcripts.py`.",
+            ),
+        ),
+        "poteto-mode/playbooks/session-pickup.md": (
+            (
+                "under the active workspace's `agent-transcripts/` directory (the system prompt names the path. Do not glob across `~/.cursor/projects/*/`, that crosses workspace boundaries and reads private chats from unrelated projects)",
+                "from the active workspace's `scripts/transcripts.py` export (do not read other workspace transcript directories; that crosses workspace boundaries and reads private chats from unrelated projects)",
+            ),
+        ),
+    }
+    for old, new in replacements.get(relpath, ()):
+        text = text.replace(old, new)
+    if relpath == "poteto-mode/playbooks/worktree-cleanup.md":
+        text = text.replace(
+            "misses one that lives at `.cursor/worktrees/myrepo/x`",
+            "misses one that lives under a harness-managed worktree directory",
+        )
+
+    lines = text.splitlines()
+    out = []
+    for line in lines:
+        if line.lstrip().startswith("- Look recursively for `.cursor/skills/"):
+            root = ".prime/skills/" if target == "prime-agent" else ".opencode/skills/"
+            personal = (
+                "~/.prime/skills/"
+                if target == "prime-agent"
+                else "~/.config/opencode/skills/"
+            )
+            out.append(
+                line.replace("~/.cursor/skills/", personal).replace(
+                    ".cursor/skills/", root
+                )
+            )
+        elif "Route findings only to skills, tools, or MCPs" in line:
+            out.append(
+                line.replace(
+                    "under `.cursor/skills/`, `~/.cursor/skills/`, or `~/.cursor/plugins/`",
+                    "from a harness skill directory",
+                )
+            )
+        elif line.startswith("- Enter on `/poteto-mode`"):
+            out.append(
+                "- In opencode, select the `poteto` primary agent with Tab, or start a task with `/poteto-mode`."
+                if target == "opencode"
+                else "- In prime-agent, start a task with `/skill:poteto-mode` or use the `/poteto` prompt."
+            )
+        elif line.startswith("- Option+Enter on Mac") or line.startswith(
+            "- Cursor's docs list Custom Modes"
+        ):
+            continue
+        else:
+            out.append(line)
+    return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+
+
 def transform_markdown(text: str, target: str, relpath: str) -> str:
+    text = rewrite_source_specific(text, target, relpath)
     for pat, repl in common_rewrites(target):
         text = pat.sub(repl, text) if hasattr(pat, "sub") else re.sub(pat, repl, text)
     text = rewrite_slashes(text, target)
+    config_root = (
+        "~/.prime/agent/" if target == "prime-agent" else "~/.config/opencode/"
+    )
+    project_root = ".prime/" if target == "prime-agent" else ".opencode/"
+    text = re.sub(r"~/.cursor/", config_root, text)
+    text = re.sub(r"\.cursor/", project_root, text)
+    text = re.sub(r"\.mdc\b", ".md", text)
+    text = re.sub(r"\bthe the\b", "the", text, flags=re.I)
+    script = TRANSCRIPTS_SCRIPT[target]
+    text = text.replace("<poteto-mode skill dir>/scripts/transcripts.py", script)
+    text = text.replace("`scripts/transcripts.py`", f"`{script}`")
+    text = re.sub(r"\bplugin plugin\b", "plugin", text, flags=re.I)
+    text = re.sub(
+        r'subagent_type: "generalPurpose"',
+        "a plain `rlm.spawn` child"
+        if target == "prime-agent"
+        else "the `general` subagent",
+        text,
+    )
     return text
 
 
@@ -1241,7 +1408,7 @@ def process_skill_dir(src: Path, dst: Path, target: str) -> list[str]:
         if item.suffix == ".md" or item.name.endswith(".md"):
             text = item.read_text(encoding="utf-8")
             fm, body = split_frontmatter(text)
-            body = transform_markdown(body, target, str(rel))
+            body = transform_markdown(body, target, f"{src.name}/{rel}")
             if item.name == "SKILL.md" and rel == Path("SKILL.md"):
                 new_fm = skill_frontmatter(fm, src.name, target)
                 if src.name == "poteto-mode":
@@ -1252,20 +1419,6 @@ def process_skill_dir(src: Path, dst: Path, target: str) -> list[str]:
             else:
                 text = body if not fm else dump_frontmatter(fm) + "\n" + body
             out.write_text(text, encoding="utf-8")
-        elif item.name == "worktree-audit.sh":
-            text = item.read_text(encoding="utf-8")
-            text = text.replace(
-                'transcripts="$HOME/.cursor/projects/$slug/agent-transcripts"',
-                'transcripts="${PSTACK_TRANSCRIPTS_DIR:-$HOME/.cursor/projects/$slug/agent-transcripts}"',
-            )
-            text = text.replace(
-                "# Transcripts dir: ~/.cursor/projects/<slugified-repo-path>/agent-transcripts.",
-                "# Transcripts dir defaults to Cursor's layout. Point PSTACK_TRANSCRIPTS_DIR at the\n"
-                "# harness's session store instead (e.g. ~/.prime/agent/sessions for prime-agent,\n"
-                "# ~/.local/share/opencode/storage for opencode).",
-            )
-            out.write_text(text, encoding="utf-8")
-            shutil.copystat(item, out)
         else:
             shutil.copy2(item, out)
     # extra reference for prime-agent no-comments
@@ -1401,6 +1554,12 @@ def build_opencode(src: Path, dst: Path) -> None:
     helper = dst / "scripts" / "install_tree.py"
     helper.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(Path(__file__).parent / "scripts" / "install_tree.py", helper)
+    transcript = dst / "skills" / "poteto-mode" / "scripts" / "transcripts.py"
+    transcript.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path(__file__).parent / "assets" / "transcripts.py", transcript)
+    restore_worktree_audit(
+        dst / "skills" / "poteto-mode" / "scripts" / "worktree-audit.sh", "opencode"
+    )
 
 
 def build_prime(src: Path, dst: Path) -> None:
@@ -1427,6 +1586,26 @@ def build_prime(src: Path, dst: Path) -> None:
     helper = dst / "scripts" / "install_tree.py"
     helper.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(Path(__file__).parent / "scripts" / "install_tree.py", helper)
+    transcript = dst / "skills" / "poteto-mode" / "scripts" / "transcripts.py"
+    transcript.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(Path(__file__).parent / "assets" / "transcripts.py", transcript)
+    restore_worktree_audit(
+        dst / "skills" / "poteto-mode" / "scripts" / "worktree-audit.sh", "prime-agent"
+    )
+
+
+def restore_worktree_audit(path: Path, target: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        "# Transcripts dir: ~/.cursor/projects/<slugified-repo-path>/agent-transcripts.\n"
+        "slug=$(printf '%s' \"$main_wt\" | sed 's#^/##; s#/#-#g')\n"
+        'transcripts="$HOME/.cursor/projects/$slug/agent-transcripts"',
+        "# Opencode has no transcript directory. Sessions live in opencode.db; use scripts/transcripts.py.\n"
+        "# Prime-agent sessions live under ~/.prime/agent/sessions.\n"
+        "slug=$(printf '%s' \"$main_wt\" | sed 's#^/##; s#/#-#g')\n"
+        'transcripts="${PSTACK_TRANSCRIPTS_DIR:-$HOME/.cursor/projects/$slug/agent-transcripts}"',
+    )
+    path.write_text(text, encoding="utf-8")
 
 
 def build_extras(src: Path, dst: Path) -> None:
@@ -1584,7 +1763,7 @@ port applies.
 | `/loop` recurring command | background task / watcher that re-arms (`scripts/watch-pr` covers GitHub PRs) | `rlm-heartbeat`, a goal, or a daemon schedule |
 | `Bugbot` PR review bot | forge-generic: "whatever bot posts review comments on your PRs" (kept as a glossary term) | same |
 | Cursor cloud agent / `environment: "cloud"` | dedicated background subagent session | resident depth-0 session (`rlm.create_session`) |
-| transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | harness session store (`~/.local/share/opencode/storage/`) | `~/.prime/agent/sessions/` |
+| transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | `poteto-mode/scripts/transcripts.py` exports this workspace's sessions via `opencode session list/export` (sessions live in `opencode.db`) | same script, reading `~/.prime/agent/sessions/*.jsonl` filtered by `cwd` |
 
 ## Externals kept conditional
 
@@ -1735,9 +1914,9 @@ def generated_hashes(root: Path) -> dict[str, str]:
 
 def generated_mismatches(root: Path) -> list[str]:
     expected = read_hash_manifest(root / "GENERATED.sha256")
-    if not expected:
-        return []
     actual = generated_hashes(root)
+    if not expected:
+        return ["GENERATED.sha256 (missing; generated trees exist)"] if actual else []
     return sorted(
         name
         for name in set(expected) | set(actual)
@@ -1786,6 +1965,34 @@ def drift_report(new_root: Path, old_root: Path) -> str:
     return "\n".join(lines) or "no changes"
 
 
+# Cursor-only text that must never reach a generated port. No allowlist: fix
+# the rewrite that let it through.
+LEAK_PATTERNS = [
+    r"~/\.cursor",
+    r"\.cursor/",
+    r"agent-transcripts",
+    r"\.mdc\b",
+    r"opencode/storage",
+    r"opencode/projects",
+    r"\bthe the\b",
+    r"plugin plugin",
+    r"AskQuestion",
+    r'subagent_type: "generalPurpose"',
+    r"system prompt names",
+]
+
+
+def check_generated_leaks(root: Path) -> None:
+    for target in ("opencode", "prime-agent"):
+        for path in sorted((root / target).rglob("*.md")):
+            relative = path.relative_to(root).as_posix()
+            lines = path.read_text(encoding="utf-8").splitlines()
+            for number, line in enumerate(lines, 1):
+                for pattern in LEAK_PATTERNS:
+                    for match in re.finditer(pattern, line, re.IGNORECASE):
+                        warn(f"generated leak {relative}:{number}: {match.group(0)}")
+
+
 def build_all(
     src: Path, dst: Path, overrides_root: Path | None = None
 ) -> dict[str, str]:
@@ -1804,6 +2011,7 @@ def build_all(
         if n:
             print(f"applied {n} override(s) to {target}/")
     whole_override_warnings(override_root.parent, bases)
+    check_generated_leaks(dst)
     return bases
 
 
@@ -1878,7 +2086,7 @@ def main() -> None:
         src = cache
         sha_file = cache.parent / "SHA"
         sha = sha_file.read_text().strip() if sha_file.exists() else "unknown"
-        src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree, cached)"
+        src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree)"
     else:
         sys.exit(
             "no source: pass --fetch to download upstream or --src DIR for a local checkout"

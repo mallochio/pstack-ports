@@ -76,7 +76,8 @@ def install(src: Path, dst: Path, subdirs: list[str]) -> None:
                     shutil.copy2(original, tmp)
                     os.replace(tmp, sidecar)
                     changes.append(f"kept local edit {target}; wrote {sidecar}")
-                installed_hashes[rel] = old_hash or new_hash
+                if old_hash is not None:
+                    installed_hashes[rel] = old_hash
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
             tmp = target.with_name(target.name + ".pstack-tmp")

@@ -14,13 +14,13 @@ Invoke when the user says "reflect" or "`/skill:reflect`". Skip when the convers
 
 ## 1. Locate the active transcript
 
-Before fanning out, find this conversation's transcript in the `~/.prime/agent/sessions/` directory the system prompt names. Do not glob across `~/.prime/agent/sessions/ entries outside this session`. That crosses workspace boundaries and reads private chats from unrelated projects.
+Before fanning out, find this conversation's transcript in this workspace's `~/.prime/agent/skills/poteto-mode/scripts/transcripts.py` export. Do not glob across other workspace transcript directories. That crosses workspace boundaries and reads private chats from unrelated projects.
 
 ```bash
-list recent session files in this session's transcript directory (see the harness notes for the store path)
+python3 ~/.prime/agent/skills/poteto-mode/scripts/transcripts.py list --days 7
 ```
 
-That covers the legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`) layouts. For each candidate, read the first JSONL line. Take the file whose `message.content[0].text` contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.
+The newest session is usually this one. Export it with `python3 ~/.prime/agent/skills/poteto-mode/scripts/transcripts.py export <ID>` and confirm its first `## User` block matches this conversation's opening prompt. If none matches, pass a tight digest of the session instead.
 
 ## 2. Spawn three reviewers in parallel
 
@@ -50,7 +50,7 @@ Present the synthesizer's full Accepted / Rejected / Backlog output and wait for
 
 File each Backlog item to your team's devex or backlog tracker without waiting. Only the Accepted list waits for approval.
 
-Never edit a skill under `plugins/cache/`. Before approval, show its destination, `.prime/agent/skills/<skill>/` or `~/.prime/agent/skills/<skill>/`. After approval, copy the skill folder there and edit the copy. Never open a PR or push.
+Never edit a skill under `plugins/cache/`. Before approval, show its destination, `.prime/skills/<skill>/` or `~/.prime/skills/<skill>/`. After approval, copy the skill folder there and edit the copy. Never open a PR or push.
 
 Follow each approved row's Routing exactly:
 

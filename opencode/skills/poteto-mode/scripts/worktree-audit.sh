@@ -69,9 +69,8 @@ elif raw=$(gh pr list --author "@me" --state all --limit 1000 \
 fi
 [ -s "$prs" ] || echo "[]" > "$prs"
 
-# Transcripts dir defaults to Cursor's layout. Point PSTACK_TRANSCRIPTS_DIR at the
-# harness's session store instead (e.g. ~/.prime/agent/sessions for prime-agent,
-# ~/.local/share/opencode/storage for opencode).
+# Opencode has no transcript directory. Sessions live in opencode.db; use scripts/transcripts.py.
+# Prime-agent sessions live under ~/.prime/agent/sessions.
 slug=$(printf '%s' "$main_wt" | sed 's#^/##; s#/#-#g')
 transcripts="${PSTACK_TRANSCRIPTS_DIR:-$HOME/.cursor/projects/$slug/agent-transcripts}"
 now=$(date +%s)
