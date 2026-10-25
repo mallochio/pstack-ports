@@ -109,8 +109,8 @@ Close calls:
 
 Not in pstack:
 
-- the `deslop` skill, `control-cli`, and `control-ui` ship in the upstream Cursor plugin.
-- a periodic wake and `/authoring-a-skill` are Cursor built-ins.
+- `deslop`, `control-cli`, `control-ui`, and the other imported team-kit skills ship with this port.
+- a periodic wake is a Cursor built-in. Skill-authoring guidance lives in the `authoring-a-skill` playbook.
 - pstack has no `/orchestrate` skill. Orchestrate is a `/poteto-mode` playbook. If the slash menu shows `/orchestrate`, another plugin provides it.
 
 ## Playbooks and principles

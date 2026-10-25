@@ -33,13 +33,15 @@ port applies.
 | Cursor cloud agent / `environment: "cloud"` | dedicated background subagent session | resident depth-0 session (`rlm.create_session`) |
 | transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | `poteto-mode/scripts/transcripts.py` exports this workspace's sessions via `opencode session list/export` (sessions live in `opencode.db`) | same script, reading `~/.prime/agent/sessions/*.jsonl` filtered by `cwd` |
 
-## Externals kept conditional
+## Imported team-kit skills
 
-- `deslop`, `control-cli`, `control-ui` (upstream `cursor-team-kit` skills) — named
-  with "(upstream Cursor plugin — if installed)" and each call site keeps a
-  hand-pass fallback, matching upstream's own optional posture.
-- `create-skill` (Cursor built-in) → opencode: the `authoring-a-skill` playbook
-  conventions; prime-agent: `skill-creator`.
+`deslop`, `control-cli`, `control-ui`, and the other harness-neutral team-kit
+skills are included in both ports. Each target includes
+`LICENSE-cursor-team-kit`. `pr-review-canvas` is skipped because it needs
+Cursor's embedded browser. The remaining team-kit skills use local files, git,
+`gh`, or harness sessions.
+- `create-skill` and `/loop` remain Cursor built-ins. Opencode uses the
+  `authoring-a-skill` playbook; prime-agent uses `skill-creator`.
 - `Origin` forge CLI references are left verbatim — upstream already gates them
   on `command -v origin`, with `gh` fallback.
 - `benny` automation pack + docs guide are in `extras/` verbatim (Cursor-shaped

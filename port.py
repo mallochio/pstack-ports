@@ -116,8 +116,8 @@ PSTACK_SKILLS = {
     "why",
 }
 
-# Skills owned by other Cursor plugins / built-ins we reference conditionally.
-EXTERNAL_SKILLS = {"deslop", "control-cli", "control-ui", "create-skill", "babysit"}
+# Skills provided by harnesses rather than this port.
+EXTERNAL_SKILLS = {"create-skill", "babysit"}
 
 ALL_SLASH = PSTACK_SKILLS | EXTERNAL_SKILLS | {"no-comments"}
 
@@ -215,7 +215,7 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
         ),
         (
             r"`git show origin/main:<control skill path>`",
-            "read the installed control skill (if one is installed)",
+            "read the installed control skill",
         ),
         # ---- make-bot-ui: automation-host agnostic ----------------------------
         (
@@ -270,57 +270,10 @@ def common_rewrites(target: str) -> list[tuple[str, str]]:
                 "the harness environment through the kernel (`rlm.mcp` / `mcp_status`)."
             ),
         ),
-        # ---- cursor-team-kit / built-in externals --------------------------------
-        (
-            r"a slop-strip \(the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)\)",
-            "a slop-strip pass (the `deslop` skill if your setup provides it, else a "
-            "hand pass against the **unslop** checklist)",
-        ),
-        (
-            r"the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)",
-            "a `deslop` slop-strip if your setup provides it, else a hand pass "
-            "against the **unslop** checklist",
-        ),
+        # ---- harness references ---------------------------------------------------
         (
             r"`cursor-team-kit` publishes `control-cli` \(CLIs and TUIs\) and `control-ui` \(browser / Electron / web UIs\)\.?",
-            "Use `control-cli` for CLIs/TUIs or `control-ui` for browser/web UIs when your "
-            "setup ships them; otherwise drive the real surface directly.",
-        ),
-        (
-            r"the matching control skill \(such as `control-ui` or `control-cli` from `cursor-team-kit`\)",
-            "the matching control-surface skill (`control-ui`/`control-cli` upstream — "
-            "if installed, else drive the real surface directly)",
-        ),
-        (
-            r"\(such as `control-ui` or `control-cli`[^)]*\)",
-            "(a control-surface skill such as `control-ui`/`control-cli` if installed, "
-            "else the real surface directly)",
-        ),
-        (
-            r"(`control-ui` or `control-cli`) from `cursor-team-kit`",
-            r"\1 (upstream Cursor plugin — if installed)",
-        ),
-        (
-            r"(`control-(ui|cli)`) from `cursor-team-kit`",
-            r"\1 (upstream Cursor plugin — if installed)",
-        ),
-        (
-            r"(`?/?control-(ui|cli)`?|/control-(ui|cli)) from `cursor-team-kit`",
-            "a control-surface skill (upstream Cursor plugin — if installed)",
-        ),
-        (
-            r"\(from `cursor-team-kit`\)",
-            "(upstream Cursor plugin — use it if installed, else do the pass by hand)",
-        ),
-        (
-            r" from `cursor-team-kit`| from the `cursor-team-kit` plugin",
-            " (upstream Cursor plugin — use it if installed, else do the pass by hand)",
-        ),
-        (r" of `cursor-team-kit`", " of the upstream Cursor plugin"),
-        (r"`cursor-team-kit`", "the upstream Cursor plugin"),
-        (
-            r"the matching control skill",
-            "the matching control-surface skill when one is installed, else the real surface directly",
+            "This port includes `control-cli` for CLIs and TUIs and `control-ui` for browser, Electron, and web UIs.",
         ),
         (
             r"the \*\*create-skill\*\* skill \(Cursor's built-in for authoring SKILL\.md files\)",
@@ -887,6 +840,7 @@ def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
     gated = dirname not in ENTRY_SKILLS
     if "description" in fm:
         d = str(fm["description"]).strip().strip('"').strip("'")
+        d = rewrite_source_specific(d, target, f"{dirname}/SKILL.md")
         d = rewrite_slashes(d, target)
         # descriptions bypass transform_markdown: apply the harness-specific
         # authoring-skill name so frontmatter never routes to Cursor's tool.
@@ -1054,7 +1008,7 @@ HARNESS_NOTE = {
         "- `Bugbot` means the forge's automated PR reviewer — whatever bot posts review comments on your PRs (Bugbot on Cursor; Copilot review, Devin Review, or a CI bot elsewhere). Triage it skeptically per `references/bugbot-triage.md`.\n"
         "- `Origin` is optional: where a playbook says `origin pr ...`, it applies only when the `origin` CLI exists and resolves the repo; otherwise stay on `gh`.\n"
         "- Where text references a periodic wake (`/loop` upstream), use a background task or watcher that re-arms; `scripts/watch-pr` covers GitHub PR wakes.\n"
-        "- The `deslop`/`control-cli`/`control-ui` skills live in a different upstream plugin. Where they're named, use them if your setup ships them, else do the equivalent pass by hand.\n"
+        "- `deslop`, `control-cli`, and `control-ui` ship with this port.\n"
         "- The verification-skill convention (`.opencode/skills/verify-<app>/`) works as-is: project-local skills are discovered automatically.\n"
         "- Gating: every skill except `/poteto-mode`, `/setup-pstack`, and `/poteto-help` carries `disable_model_invocation` and a description gate — the harness must not trigger pstack skills on its own. They load only when the task runs under `/poteto-mode`, which routes to them explicitly per playbook.\n"
     ),
@@ -1067,7 +1021,7 @@ HARNESS_NOTE = {
         "- `Bugbot` means the forge's automated PR reviewer — whatever bot posts review comments on your PRs (Bugbot on Cursor; Copilot review, Devin Review, or a CI bot elsewhere). Triage it skeptically per `references/bugbot-triage.md`.\n"
         "- `Origin` is optional: where a playbook says `origin pr ...`, it applies only when the `origin` CLI exists and resolves the repo; otherwise stay on `gh`.\n"
         "- Where upstream text says `/loop`, use a scheduled wake: `rlm-heartbeat`, a goal, or a daemon schedule.\n"
-        "- `skill-creator` replaces upstream's `create-skill`; `deslop`/`control-cli`/`control-ui` are upstream-plugin skills — use them if installed, else do the equivalent pass by hand.\n"
+        "- `skill-creator` replaces upstream's `create-skill`; `deslop`, `control-cli`, and `control-ui` ship with this port.\n"
         "- Long-running program playbooks (orchestrate, autopilot-*) map best onto the factory plus resident sessions (`rlm.create_session`).\n"
         "- Gating: every skill except `poteto-mode`, `setup-pstack`, and `poteto-help` carries `disable-model-invocation` and a description gate — skills stay hidden until invoked. They load only when the task runs under `/skill:poteto-mode`, which routes to them explicitly per playbook.\n"
     ),
@@ -1271,12 +1225,124 @@ def rewrite_source_specific(text: str, target: str, relpath: str) -> str:
             else "spawn it with the `poteto-agent` subagent"
         )
         text = text.replace('spawn it with `subagent_type: "poteto-agent"`', spawn)
+        text = text.replace(
+            "- `/deslop`, `control-cli`, and `control-ui` ship in the `cursor-team-kit` plugin.",
+            "- `deslop`, `control-cli`, `control-ui`, and the other imported team-kit skills ship with this port.",
+        )
+        text = text.replace(
+            "- `/loop` and `/create-skill` are Cursor built-ins.",
+            "- `/loop` is a Cursor built-in. Skill-authoring guidance lives in the `authoring-a-skill` playbook."
+            if target == "opencode"
+            else "- `/loop` is a Cursor built-in. Skill-authoring guidance lives in the `skill-creator` skill.",
+        )
 
     replacements = {
         "recall/SKILL.md": (
             (
                 'Transcripts live at `~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>.jsonl`, where `<slug>` is the workspace path with the leading slash dropped and each "/" turned into "-" (so `/Users/you/proj` becomes `Users-you-proj`). Every line is one chat message.',
                 "Export this workspace's transcripts with `python3 <poteto-mode skill dir>/scripts/transcripts.py export --days 7`. It writes one markdown file per session and prints the paths.",
+            ),
+        ),
+        "poteto-mode/SKILL.md": (
+            (
+                "About to `AskQuestion` on a",
+                "About to ask the operator a question on a",
+            ),
+            (
+                "This port includes `control-cli` for CLIs and TUIs and `control-ui` for browser / Electron / web UIs.",
+                "This port includes `control-cli` for CLIs and TUIs and `control-ui` for browser, Electron, and web UIs.",
+            ),
+        ),
+        "poteto-mode/playbooks/multi-phase-plan.md": (
+            ("`control-ui` from `cursor-team-kit`", "the included `control-ui` skill"),
+            (
+                "`control-cli` from `cursor-team-kit`",
+                "the included `control-cli` skill",
+            ),
+            (
+                "`git show origin/main:<control skill path>`",
+                "read the included control skill",
+            ),
+            (
+                "`/deslop` before each commit",
+                "the `deslop` skill before each commit",
+            ),
+            (
+                "Run `/deslop` before each commit",
+                "Run the `deslop` skill before each commit",
+            ),
+            (
+                "Drive through `control-ui` or `control-cli` from `cursor-team-kit`.",
+                "Drive through the included `control-ui` or `control-cli` skills.",
+            ),
+            (
+                "input only through the control skill's commands",
+                "input only through the included control skill's commands",
+            ),
+            (
+                "Deliver input only through the control skill's commands.",
+                "Deliver input only through the included control skill's commands.",
+            ),
+            (
+                "the real surface through its control skill, per the **swarm** skill",
+                "the real surface through its included control skill, per the **swarm** skill",
+            ),
+        ),
+        "poteto-mode/playbooks/autopilot-full.md": (
+            (
+                "the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`)",
+                "the `deslop` skill",
+            ),
+            (
+                "`control-ui` or `control-cli` from `cursor-team-kit`",
+                "the included `control-ui` or `control-cli` skill",
+            ),
+            (
+                "control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`)",
+                "included control skill (`control-ui` or `control-cli`)",
+            ),
+            (
+                "the slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))",
+                "the `deslop` skill",
+            ),
+            (
+                "the included `deslop` skill (the `deslop` skill)",
+                "the `deslop` skill",
+            ),
+            (
+                "through its control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`)",
+                "through the included `control-ui` or `control-cli` skill",
+            ),
+            (
+                "through its control skill (such as the included `control-ui` or `control-cli` skill)",
+                "through its included control skill",
+            ),
+        ),
+        "poteto-mode/playbooks/shipping.md": (
+            (
+                "One verifier per PR, each a Cursor cloud agent, runs the change the way a user would with the matching control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`)",
+                "One verifier per PR, each an independent subagent, runs the change with the included control skill (`control-ui` or `control-cli`)",
+            ),
+        ),
+        "poteto-mode/playbooks/opening-a-pr.md": (
+            ("`/deslop` from `cursor-team-kit`", "the `deslop` skill"),
+        ),
+        "poteto-mode/playbooks/orchestrate.md": (
+            (
+                "`control-ui` or `control-cli` runtime verification (from `cursor-team-kit`)",
+                "runtime verification with the included `control-ui` or `control-cli` skills",
+            ),
+        ),
+        "poteto-help/SKILL.md": (
+            (
+                "`/deslop`, `control-cli`, and `control-ui` ship in the `cursor-team-kit` plugin.",
+                "`/deslop`, `/control-cli`, and `/control-ui` ship with this port.",
+            ),
+            (
+                "`/loop` and `/create-skill` are Cursor built-ins.",
+                "`/loop` is a Cursor built-in. Skill-authoring guidance lives in the `authoring-a-skill` playbook."
+                if target == "opencode"
+                else "`/loop` and `/create-skill` are Cursor built-ins. Skill-authoring guidance lives in the `skill-creator` skill.",
             ),
         ),
         "reflect/SKILL.md": (
@@ -1323,15 +1389,68 @@ def rewrite_source_specific(text: str, target: str, relpath: str) -> str:
                 "from the active workspace's `scripts/transcripts.py` export (do not read other workspace transcript directories; that crosses workspace boundaries and reads private chats from unrelated projects)",
             ),
         ),
+        "workflow-from-chats/SKILL.md": (
+            (
+                "Extract durable working preferences from recent Cursor chats and convert them into skills, rules, or workflow docs.",
+                "Extract durable working preferences from recent harness sessions and convert them into skills or workflow docs.",
+            ),
+            (
+                "recent chats",
+                "recent sessions",
+            ),
+            (
+                "Read parent transcripts and relevant subagent transcripts. Use subagent content as evidence, but cite only parent conversations.",
+                "Export this workspace's sessions with `python3 <poteto-mode skill dir>/scripts/transcripts.py export --days N` and cite sessions by ID.",
+            ),
+            (
+                "Read parent transcripts and relevant subagent transcripts.",
+                "Read parent session exports and relevant child-session exports.",
+            ),
+            (
+                "Build an internal transcript inventory",
+                "Build an internal session inventory",
+            ),
+        ),
+        "agents/thermo-nuclear-code-quality-review.md": (
+            (
+                "Invoked via Task after a parent gathers diff and file contents.",
+                "Invoke as a subagent after the parent gathers the diff and changed-file contents.",
+            ),
+            (
+                "You are a **Task subagent**.",
+                "You are a subagent.",
+            ),
+            (
+                "Loads the rubric from the `thermo-nuclear-code-quality-review` skill in the cursor-team-kit plugin.",
+                "Loads the rubric from the included `thermo-nuclear-code-quality-review` skill.",
+            ),
+            (
+                "1. Load the `thermo-nuclear-code-quality-review` skill (shipped in the cursor-team-kit plugin) and treat its `SKILL.md` as the **complete** rubric — tone, approval bar, output ordering, code-judo / 1k-line / spaghetti rules.",
+                "1. Load the included `thermo-nuclear-code-quality-review` skill and treat its `SKILL.md` as the complete rubric.",
+            ),
+            (
+                'Typical flow: in **one** message, run two `Task` calls in parallel — `subagent_type: "shell"` and `subagent_type: "explore"` — to collect `git diff <base>...HEAD` output and full contents of changed files (default base `main`). Then invoke this agent with `subagent_type: "thermo-nuclear-code-quality-review"` and a user prompt containing `### Git / diff output` and `### Changed file contents`.',
+                "Typical flow: collect the diff and changed-file contents with read-only agents, then invoke this agent with the collected evidence under `### Git / diff output` and `### Changed file contents`.",
+            ),
+        ),
     }
     for old, new in replacements.get(relpath, ()):
         text = text.replace(old, new)
+    if relpath == "poteto-mode/SKILL.md":
+        text = text.replace(
+            "the matching control skill.",
+            "the included matching control-surface skill.",
+        )
+    if relpath == "poteto-mode/playbooks/orchestrate.md":
+        text = text.replace(
+            "`control-ui` or `control-cli` runtime verification (from `cursor-team-kit`)",
+            "runtime verification with the included `control-ui` or `control-cli` skills",
+        )
     if relpath == "poteto-mode/playbooks/worktree-cleanup.md":
         text = text.replace(
             "misses one that lives at `.cursor/worktrees/myrepo/x`",
             "misses one that lives under a harness-managed worktree directory",
         )
-
     lines = text.splitlines()
     out = []
     for line in lines:
@@ -1455,6 +1574,13 @@ def rewrite_poteto_mode(body: str, target: str) -> str:
         body = EVERY_TURN + body
     # append harness notes at end
     body = body.rstrip() + "\n\n" + HARNESS_NOTE[target] + "\n"
+    body = body.replace(
+        "the `deslop` skill if your setup provides it, else a hand pass against the **unslop** checklist",
+        "the included `deslop` skill",
+    ).replace(
+        "the `deslop` skill from the `cursor-team-kit` plugin",
+        "the included `deslop` skill",
+    )
     return body
 
 
@@ -1467,7 +1593,7 @@ OC_INSTALL = """#!/usr/bin/env bash
 set -euo pipefail
 DST="${1:-$HOME/.config/opencode}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents commands
+python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents commands LICENSE-cursor-team-kit
 """
 
 PRIME_INSTALL = """#!/usr/bin/env bash
@@ -1475,7 +1601,7 @@ PRIME_INSTALL = """#!/usr/bin/env bash
 set -euo pipefail
 DST="${1:-$HOME/.prime/agent}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents prompts
+python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents prompts LICENSE-cursor-team-kit
 """
 
 OC_AGENTS = {
@@ -1594,6 +1720,54 @@ def build_prime(src: Path, dst: Path) -> None:
     )
 
 
+SKIPPED_TEAM_KIT = {
+    "pr-review-canvas": "Requires Cursor's rendered PR review canvas.",
+}
+
+
+def build_team_kit(src: Path, dst: Path, target: str) -> None:
+    skills_src = src / "skills"
+    skills_dst = dst / "skills"
+    for skill in sorted(skills_src.iterdir()):
+        if (
+            not skill.is_dir()
+            or skill.name in SKIPPED_TEAM_KIT
+            or skill.name in PSTACK_SKILLS
+        ):
+            continue
+        process_skill_dir(skill, skills_dst / skill.name, target)
+    if target == "opencode":
+        for agent in sorted((src / "agents").glob("*.md")):
+            fm, body = split_frontmatter(agent.read_text(encoding="utf-8"))
+            body = transform_markdown(body, target, f"agents/{agent.name}")
+            desc = transform_markdown(
+                str(fm.get("description", agent.stem)).strip().strip('"').strip("'"),
+                target,
+                f"agents/{agent.name}",
+            )
+            write(
+                dst / "agents" / agent.name,
+                dump_frontmatter({"description": desc, "mode": "subagent"})
+                + "\n"
+                + body,
+            )
+    rules = src / "rules"
+    if rules.is_dir():
+        for rule in sorted(rules.rglob("*.mdc")):
+            rule_text = rule.read_text(encoding="utf-8")
+            depends_on_ported_skill = any(
+                re.search(rf"\b{re.escape(name)}\b", rule_text)
+                for name in ported_team_kit_skills(src)
+            )
+            if depends_on_ported_skill:
+                warn(
+                    f"Cursor rule {rule.relative_to(src)} is referenced by a ported team-kit skill"
+                )
+    license_path = src / "LICENSE"
+    if license_path.is_file():
+        shutil.copy2(license_path, dst / "LICENSE-cursor-team-kit")
+
+
 def restore_worktree_audit(path: Path, target: str) -> None:
     text = path.read_text(encoding="utf-8")
     text = text.replace(
@@ -1630,8 +1804,10 @@ Cursor plugin (MIT, by Lauren Tan / @poteto) — for two other agent harnesses.
   `benny` is a Cursor cloud-automation pack; it stays Cursor-shaped and only
   applies if you run its routines on Cursor (or re-home its prompts on your own
   automation host).
+- `LICENSE-cursor-team-kit` — the license for the imported team-kit skills.
 - `port.py` — the generator. Re-run it to re-derive both ports from a fresh
-  upstream checkout: `python3 port.py --src <path/to/pstack>`.
+  upstream checkout: `python3 port.py --fetch`, or pass `--src` for pstack and
+  `--team-kit-src` for team-kit local source trees.
 
 See `ADAPTATIONS.md` for the Cursor → harness mapping table.
 `UPSTREAM` records the exact upstream commit the outputs were generated from.
@@ -1717,11 +1893,17 @@ pstack model config to apply. Uninstall leaves setup-pstack files in place.
 
 | Piece | opencode | prime-agent |
 |---|---|---|
-| 50 skills (incl. `poteto-mode` + 21 principle leaf skills + playbooks/references) | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
+| pstack and team-kit skills | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
 | `poteto-mode` activation | `/poteto-mode` command or the `poteto` primary agent | `/skill:poteto-mode` or `/poteto` prompt |
 | Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `pstack-models.md` + pointer block in `AGENTS.md` |
-| Subagent specs | `agents/poteto-agent.md`, `comment-sicko.md` (`mode: subagent`) | `agents/*.md` (spec docs; `no-comments` embeds Comment Sicko as a spawn prompt) |
+| Subagent specs | pstack and team-kit agents (`mode: subagent`) | pstack agent specs; `no-comments` embeds Comment Sicko as a spawn prompt |
 | Scripts | `poteto-mode/scripts/` (`watch-pr`, `orch`, `check-plan.mjs`, `worktree-audit.sh`) — verbatim | same |
+
+The generator skips `pr-review-canvas` because that skill needs Cursor's
+embedded browser. The other team-kit skills use local files, git, `gh`, or
+harness sessions. Team-kit's `no-inline-imports.mdc` and
+`typescript-exhaustive-switch.mdc` rules are not included. No ported skill
+depends on either rule.
 
 Scripts are copied unmodified (they are forge/git helpers, not Cursor APIs);
 `worktree-audit.sh` honors `PSTACK_TRANSCRIPTS_DIR` if your session store is not
@@ -1765,13 +1947,15 @@ port applies.
 | Cursor cloud agent / `environment: "cloud"` | dedicated background subagent session | resident depth-0 session (`rlm.create_session`) |
 | transcripts at `~/.cursor/projects/<slug>/agent-transcripts/` | `poteto-mode/scripts/transcripts.py` exports this workspace's sessions via `opencode session list/export` (sessions live in `opencode.db`) | same script, reading `~/.prime/agent/sessions/*.jsonl` filtered by `cwd` |
 
-## Externals kept conditional
+## Imported team-kit skills
 
-- `deslop`, `control-cli`, `control-ui` (upstream `cursor-team-kit` skills) — named
-  with "(upstream Cursor plugin — if installed)" and each call site keeps a
-  hand-pass fallback, matching upstream's own optional posture.
-- `create-skill` (Cursor built-in) → opencode: the `authoring-a-skill` playbook
-  conventions; prime-agent: `skill-creator`.
+`deslop`, `control-cli`, `control-ui`, and the other harness-neutral team-kit
+skills are included in both ports. Each target includes
+`LICENSE-cursor-team-kit`. `pr-review-canvas` is skipped because it needs
+Cursor's embedded browser. The remaining team-kit skills use local files, git,
+`gh`, or harness sessions.
+- `create-skill` and `/loop` remain Cursor built-ins. Opencode uses the
+  `authoring-a-skill` playbook; prime-agent uses `skill-creator`.
 - `Origin` forge CLI references are left verbatim — upstream already gates them
   on `command -v origin`, with `gh` fallback.
 - `benny` automation pack + docs guide are in `extras/` verbatim (Cursor-shaped
@@ -1809,24 +1993,43 @@ def resolve_ref(ref: str) -> str:
 
 
 def fetch_upstream(ref: str, cache: Path) -> tuple[Path, str]:
-    """Download the pstack subtree at `ref` into `cache`; return (src_dir, sha)."""
+    """Download both subtrees at `ref`; return the pstack path and SHA."""
     sha = resolve_ref(ref)
     url = f"https://github.com/{UPSTREAM_REPO}/archive/{sha}.tar.gz"
     print(f"fetching {UPSTREAM_REPO}@{sha[:12]} ...")
     req = urllib.request.Request(url, headers={"User-Agent": "pstack-port"})
     with urllib.request.urlopen(req, timeout=120) as r:
         blob = r.read()
-    shutil.rmtree(cache, ignore_errors=True)
-    cache.mkdir(parents=True)
-    root_prefix = f"plugins-{sha}/{UPSTREAM_SUBDIR}/"
+    pstack_cache = cache
+    team_kit_cache = cache.parent / "cursor-team-kit"
+    for subtree_cache in (pstack_cache, team_kit_cache):
+        subtree_cache.mkdir(parents=True, exist_ok=True)
+        for child in subtree_cache.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    root_prefix = f"plugins-{sha}/"
     with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
-        members = [
-            m for m in tf.getmembers() if m.name.startswith(root_prefix) and m.isfile()
-        ]
-        for m in members:
-            m.name = m.name[len(root_prefix) :]
-            tf.extract(m, cache, filter="data")
-    return cache, sha
+        for member in tf.getmembers():
+            if not member.isfile() or not member.name.startswith(root_prefix):
+                continue
+            relative = member.name[len(root_prefix) :]
+            for subtree, subtree_cache in (
+                (UPSTREAM_SUBDIR, pstack_cache),
+                ("cursor-team-kit", team_kit_cache),
+            ):
+                prefix = subtree + "/"
+                if relative.startswith(prefix):
+                    member.name = relative[len(prefix) :]
+                    tf.extract(member, subtree_cache, filter="data")
+                    break
+    return pstack_cache, sha
+
+
+def source_skills(src: Path) -> set[str]:
+    skills = src / "skills"
+    return {path.name for path in skills.iterdir() if path.is_dir()}
 
 
 def write_stamp(dst: Path, src_desc: str) -> None:
@@ -1977,8 +2180,10 @@ LEAK_PATTERNS = [
     r"\bthe the\b",
     r"plugin plugin",
     r"AskQuestion",
+    r"\bsubagent_type\b",
     r'subagent_type: "generalPurpose"',
     r"system prompt names",
+    r"cursor-team-kit plugin",
 ]
 
 
@@ -1993,14 +2198,36 @@ def check_generated_leaks(root: Path) -> None:
                         warn(f"generated leak {relative}:{number}: {match.group(0)}")
 
 
+def ported_team_kit_skills(src: Path) -> set[str]:
+    return source_skills(src) - SKIPPED_TEAM_KIT.keys() - PSTACK_SKILLS
+
+
+def validate_team_kit_source(src: Path) -> None:
+    actual = source_skills(src)
+    missing = SKIPPED_TEAM_KIT.keys() - actual
+    if missing:
+        sys.exit(
+            "skip map names missing team-kit skills: " + ", ".join(sorted(missing))
+        )
+
+
 def build_all(
-    src: Path, dst: Path, overrides_root: Path | None = None
+    src: Path,
+    dst: Path,
+    overrides_root: Path | None = None,
+    team_kit_src: Path | None = None,
 ) -> dict[str, str]:
     global ACTIVE_SKILLS
     ACTIVE_SKILLS = {d.name for d in (src / "skills").iterdir() if d.is_dir()}
+    if team_kit_src and (team_kit_src / "skills").is_dir():
+        validate_team_kit_source(team_kit_src)
+        ACTIVE_SKILLS |= ported_team_kit_skills(team_kit_src)
     check_persistent_rewrites(src)
     build_opencode(src, dst / "opencode")
     build_prime(src, dst / "prime-agent")
+    if team_kit_src and (team_kit_src / "skills").is_dir():
+        build_team_kit(team_kit_src, dst / "opencode", "opencode")
+        build_team_kit(team_kit_src, dst / "prime-agent", "prime-agent")
     build_extras(src, dst / "extras")
     write(dst / "README.md", README)
     write(dst / "ADAPTATIONS.md", ADAPTATIONS)
@@ -2027,14 +2254,13 @@ def install_build(staged: Path, dst: Path) -> None:
 def fail_if_strict(strict: bool) -> None:
     """Exit 1 when --strict is set and the build printed warnings."""
     if strict and WARNINGS:
-        sys.exit(
-            f"{len(WARNINGS)} warning(s); a local rewrite no longer matches upstream"
-        )
+        sys.exit(f"{len(WARNINGS)} warning(s); a source rewrite needs an update")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--src", help="local pstack checkout (default: fetched cache)")
+    ap.add_argument("--team-kit-src", help="local cursor-team-kit checkout")
     ap.add_argument(
         "--dst",
         default=str(Path(__file__).resolve().parent),
@@ -2073,17 +2299,23 @@ def main() -> None:
                 )
             warn("--force will replace generated-file edits: " + ", ".join(edits))
     cache = dst / ".upstream" / UPSTREAM_SUBDIR
+    team_kit_cache = dst / ".upstream" / "cursor-team-kit"
 
     src_desc = None
+    team_kit_src = Path(args.team_kit_src) if args.team_kit_src else None
     if args.src:
         src = Path(args.src)
         src_desc = f"local checkout: {src}"
     elif args.fetch:
         src, sha = fetch_upstream(args.ref, cache)
+        if team_kit_src is None:
+            team_kit_src = team_kit_cache
         (cache.parent / "SHA").write_text(sha + "\n")
         src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree)"
     elif cache.is_dir():
         src = cache
+        if team_kit_src is None and team_kit_cache.is_dir():
+            team_kit_src = team_kit_cache
         sha_file = cache.parent / "SHA"
         sha = sha_file.read_text().strip() if sha_file.exists() else "unknown"
         src_desc = f"{UPSTREAM_REPO}@{sha} ({UPSTREAM_SUBDIR}/ subtree)"
@@ -2092,9 +2324,17 @@ def main() -> None:
             "no source: pass --fetch to download upstream or --src DIR for a local checkout"
         )
 
+    if team_kit_src is not None and not (team_kit_src / "skills").is_dir():
+        sys.exit(f"team-kit source has no skills directory: {team_kit_src}")
+
     if args.check:
         with tempfile.TemporaryDirectory() as tmp:
-            build_all(src, Path(tmp), overrides_root=dst / "overrides")
+            build_all(
+                src,
+                Path(tmp),
+                overrides_root=dst / "overrides",
+                team_kit_src=team_kit_src,
+            )
             print(drift_report(Path(tmp), dst))
         edits = generated_mismatches(dst)
         if edits:
@@ -2104,7 +2344,12 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp)
-        bases = build_all(src, staged, overrides_root=dst / "overrides")
+        bases = build_all(
+            src,
+            staged,
+            overrides_root=dst / "overrides",
+            team_kit_src=team_kit_src,
+        )
         fail_if_strict(args.strict)
         install_build(staged, dst)
     if src_desc:
@@ -2112,7 +2357,6 @@ def main() -> None:
     write_hash_manifest(dst / "overrides" / "BASES.sha256", bases)
     write_hash_manifest(dst / "GENERATED.sha256", generated_hashes(dst))
     print("wrote", dst)
-    fail_if_strict(args.strict)
 
 
 if __name__ == "__main__":

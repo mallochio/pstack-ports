@@ -9,8 +9,10 @@ Cursor plugin (MIT, by Lauren Tan / @poteto) — for two other agent harnesses.
   `benny` is a Cursor cloud-automation pack; it stays Cursor-shaped and only
   applies if you run its routines on Cursor (or re-home its prompts on your own
   automation host).
+- `LICENSE-cursor-team-kit` — the license for the imported team-kit skills.
 - `port.py` — the generator. Re-run it to re-derive both ports from a fresh
-  upstream checkout: `python3 port.py --src <path/to/pstack>`.
+  upstream checkout: `python3 port.py --fetch`, or pass `--src` for pstack and
+  `--team-kit-src` for team-kit local source trees.
 
 See `ADAPTATIONS.md` for the Cursor → harness mapping table.
 `UPSTREAM` records the exact upstream commit the outputs were generated from.
@@ -94,11 +96,17 @@ pstack model config to apply. Uninstall leaves setup-pstack files in place.
 
 | Piece | opencode | prime-agent |
 |---|---|---|
-| 50 skills (incl. `poteto-mode` + 21 principle leaf skills + playbooks/references) | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
+| pstack and team-kit skills | `skills/*/SKILL.md` | `skills/*/SKILL.md` |
 | `poteto-mode` activation | `/poteto-mode` command or the `poteto` primary agent | `/skill:poteto-mode` or `/poteto` prompt |
 | Model config | `/setup-pstack` → `pstack-models.md` + `instructions` | `/skill:setup-pstack` → `pstack-models.md` + pointer block in `AGENTS.md` |
-| Subagent specs | `agents/poteto-agent.md`, `comment-sicko.md` (`mode: subagent`) | `agents/*.md` (spec docs; `no-comments` embeds Comment Sicko as a spawn prompt) |
+| Subagent specs | pstack and team-kit agents (`mode: subagent`) | pstack agent specs; `no-comments` embeds Comment Sicko as a spawn prompt |
 | Scripts | `poteto-mode/scripts/` (`watch-pr`, `orch`, `check-plan.mjs`, `worktree-audit.sh`) — verbatim | same |
+
+The generator skips `pr-review-canvas` because that skill needs Cursor's
+embedded browser. The other team-kit skills use local files, git, `gh`, or
+harness sessions. Team-kit's `no-inline-imports.mdc` and
+`typescript-exhaustive-switch.mdc` rules are not included. No ported skill
+depends on either rule.
 
 Scripts are copied unmodified (they are forge/git helpers, not Cursor APIs);
 `worktree-audit.sh` honors `PSTACK_TRANSCRIPTS_DIR` if your session store is not

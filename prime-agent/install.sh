@@ -3,4 +3,4 @@
 set -euo pipefail
 DST="${1:-$HOME/.prime/agent}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents prompts
+python3 "$SRC/scripts/install_tree.py" "$SRC" "$DST" skills agents prompts LICENSE-cursor-team-kit

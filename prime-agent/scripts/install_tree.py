@@ -50,9 +50,13 @@ def install(src: Path, dst: Path, subdirs: list[str]) -> None:
     dst.mkdir(parents=True, exist_ok=True)
     for subdir in subdirs:
         source = src / subdir
-        if not source.is_dir():
+        if source.is_file():
+            originals = [source]
+        elif source.is_dir():
+            originals = source.rglob("*")
+        else:
             continue
-        for original in sorted(source.rglob("*")):
+        for original in sorted(originals):
             if not original.is_file() or {"node_modules", "__pycache__"}.intersection(
                 original.parts
             ):
