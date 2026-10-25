@@ -1613,6 +1613,8 @@ mode: primary
 ---
 
 You are in poteto mode. At the start of every task, load the `poteto-mode` skill in full — including its inline Principles index — then follow its "Every turn" section: name the playbook and copy its steps into your task list verbatim, load the routed skills and principles it names, and close every step before the reply. Repeat this on every new user message, not only the first. All poteto-mode rules apply for the whole session: deliberate subagents, unslopped prose, simple code, verified work.
+
+Every ported skill is hidden from the available-skills list in every agent, so it costs no context until loaded, and any of them still loads by explicit ID with the `skill` tool. Catalog: {{SKILL_IDS}}. `poteto-mode` routes most of these by playbook; load one directly by ID when the task needs it.
 """,
 }
 
@@ -1639,7 +1641,7 @@ Load the `poteto-help` skill and answer the user's question with it. $ARGUMENTS
 }
 
 PRIME_PROMPTS = {
-    "poteto.md": """Load and apply the `poteto-mode` skill to this request (`/skill:poteto-mode` is the explicit form): $1""",
+    "poteto.md": """Load and apply the `poteto-mode` skill to this request (`/skill:poteto-mode` is the explicit form). Every ported skill loads by explicit ID (`/skill:<id>`): {{SKILL_IDS}}. $1""",
     "setup-pstack.md": """Run the `setup-pstack` skill: $1""",
     "poteto-help.md": """Load the `poteto-help` skill (`/skill:poteto-help` is the explicit form) and answer with it: $1""",
 }
@@ -1651,6 +1653,11 @@ PRIME_PACKAGE_JSON = {
     "license": "MIT",
     "pi": {"skills": ["skills/"], "prompts": ["prompts/"]},
 }
+
+
+def fill_catalog(content: str) -> str:
+    """Expand {{SKILL_IDS}} with every ported skill name, pstack and team-kit."""
+    return content.replace("{{SKILL_IDS}}", ", ".join(sorted(ACTIVE_SKILLS)))
 
 
 def write(path: Path, text: str) -> None:
@@ -1674,7 +1681,7 @@ def build_opencode(src: Path, dst: Path) -> None:
         new_fm = {"description": desc, "mode": "subagent"}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in OC_AGENTS.items():
-        write(dst / "agents" / name, content)
+        write(dst / "agents" / name, fill_catalog(content))
     for name, content in OC_COMMANDS.items():
         write(dst / "commands" / name, content)
     write(dst / "install.sh", OC_INSTALL)
@@ -1707,7 +1714,7 @@ def build_prime(src: Path, dst: Path) -> None:
         new_fm = {"name": f.stem, "description": desc}
         write(dst / "agents" / f.name, dump_frontmatter(new_fm) + "\n" + body)
     for name, content in PRIME_PROMPTS.items():
-        write(dst / "prompts" / name, content)
+        write(dst / "prompts" / name, fill_catalog(content))
     write(dst / "package.json", json.dumps(PRIME_PACKAGE_JSON, indent=2) + "\n")
     write(dst / "install.sh", PRIME_INSTALL)
     (dst / "install.sh").chmod(0o755)
