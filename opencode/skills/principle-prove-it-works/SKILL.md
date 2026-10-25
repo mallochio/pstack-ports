@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply after comp
   a task, before declaring done. Verify against the real artifact (run the feature,
   read the actual value, inspect the diff), not a proxy, self-report, or 'it compiles.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

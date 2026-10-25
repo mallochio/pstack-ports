@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when debug
   Trace each symptom back to the first place the system went wrong and fix it there.
   A guard is a fix only when the state it handles is legitimate.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

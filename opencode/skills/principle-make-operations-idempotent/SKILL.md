@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when desig
   commands, lifecycle steps, or processing loops that run amid crashes, restarts,
   and retries. Converge to the same end state regardless of partial prior runs.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

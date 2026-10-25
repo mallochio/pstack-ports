@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Apply to multi-s
   PRs. Break work into small units that each end in a verifiable state, check each
   before the next, and order delivery so the sequence proves itself to a reviewer.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

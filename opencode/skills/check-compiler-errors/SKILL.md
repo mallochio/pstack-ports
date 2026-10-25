@@ -3,7 +3,7 @@ name: check-compiler-errors
 description: Only use when poteto-mode is active for this task. Run compile and type-check
   commands and report failures
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

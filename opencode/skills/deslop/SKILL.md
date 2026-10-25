@@ -3,7 +3,7 @@ name: deslop
 description: Only use when poteto-mode is active for this task. Remove AI-generated
   code slop and clean up code style
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

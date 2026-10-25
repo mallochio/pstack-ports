@@ -3,7 +3,7 @@ name: what-did-i-get-done
 description: Only use when poteto-mode is active for this task. Summarize authored
   commits over a user-specified time period into a concise update
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

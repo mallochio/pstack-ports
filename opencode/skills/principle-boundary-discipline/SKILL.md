@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Apply when wirin
   boundaries (CLI, config, network, external APIs); trust internal types and keep
   business logic in pure functions.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

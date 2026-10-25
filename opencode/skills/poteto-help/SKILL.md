@@ -3,7 +3,7 @@ name: poteto-help
 description: Guides users through pstack setup, `/poteto-mode`, and picking the skill,
   playbook, or principle for a task. Type `/poteto-help` with a question.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Fan out N parall
   workers, drain them, and return one report. Use for the `swarm` skill, 'swarm this',
   or parallel coverage, races, gauntlets, and exploration.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

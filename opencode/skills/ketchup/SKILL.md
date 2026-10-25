@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Catch the user u
   visuals. List every item waiting on them with what they need to decide it from the
   reply alone. Use for the `ketchup` skill.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

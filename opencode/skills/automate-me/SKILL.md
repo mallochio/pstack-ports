@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Use for "automat
   a personal -mode skill via authoring-a-skill + unslop, optionally pulling fresh
   evidence from recent transcripts.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

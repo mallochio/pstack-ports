@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Build or adapt a
   services. Use for CLI UX checks, startup regressions, memory leaks, hangs, prompt
   flows, or terminal demos.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

@@ -4,7 +4,7 @@ description: 'Only use when poteto-mode is active for this task. Verify a claim 
   fresh local evidence: restate it falsifiably, capture baseline and treatment, compare
   artifacts, and return VERIFIED, NOT VERIFIED, or INCONCLUSIVE.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

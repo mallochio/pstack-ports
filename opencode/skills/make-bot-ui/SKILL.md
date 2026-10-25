@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Use when buildin
   a custom UI (page, dashboard, buttons) that should wake a Grok Bot over a webhook,
   when the user must provide a webhook sender key, or when exposing that UI on Tailscale.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

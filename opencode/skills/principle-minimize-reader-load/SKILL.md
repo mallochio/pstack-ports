@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Apply when revie
   and hidden state in the reader's head; collapse one-caller wrappers and shrink mutable
   scope.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

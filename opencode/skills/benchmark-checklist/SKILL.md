@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Vet a perf measu
   happened) before you report or act on it. Use when you run a benchmark or report
   a speedup or regression you measured.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

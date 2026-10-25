@@ -3,7 +3,7 @@ name: fix-ci
 description: Only use when poteto-mode is active for this task. Find failing PR checks,
   inspect logs or external check links, and apply focused fixes
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

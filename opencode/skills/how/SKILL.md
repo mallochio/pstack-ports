@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Use for "how doe
   the right layer"). Explains subsystem architecture, runtime flow, onboarding mental
   models. Use why for motivation.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

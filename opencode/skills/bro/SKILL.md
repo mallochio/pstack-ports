@@ -3,7 +3,7 @@ name: bro
 description: Only use when poteto-mode is active for this task. Restate the last message
   in plain human language, with no jargon.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

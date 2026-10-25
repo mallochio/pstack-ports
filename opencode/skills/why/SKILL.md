@@ -7,7 +7,7 @@ description: Only use when poteto-mode is active for this task. Use for 'why doe
   error tracking, product analytics warehouse) in parallel, then returns a cited read
   on decisions and tradeoffs. Use how for runtime behavior.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

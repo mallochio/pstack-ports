@@ -5,7 +5,7 @@ description: "Only use when poteto-mode is active for this task. Layered technic
   \ rules, Global English syntax. Use for the `technical-writing` skill or when writing\
   \ or reviewing docs, RFCs, readmes, PR descriptions, or commit messages."
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

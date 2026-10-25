@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply during pla
   rewrites and migrations with explicit phase boundaries. Converge on the target architecture;
   don't preserve smooth intermediate states with throwaway compatibility code.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

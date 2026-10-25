@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Restate in your 
   words what you think the user's goals are and what problem they're trying to solve.
   Use for the `in-your-own-words` skill.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

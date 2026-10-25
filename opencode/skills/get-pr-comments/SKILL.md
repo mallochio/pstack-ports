@@ -3,7 +3,7 @@ name: get-pr-comments
 description: Only use when poteto-mode is active for this task. Fetch and summarize
   review comments from the active pull request
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

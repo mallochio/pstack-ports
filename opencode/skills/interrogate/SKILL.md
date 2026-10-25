@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Use for "interro
   code", "find blind spots", or "tear this apart". Multiple LLM reviewers challenge
   changes from independent angles.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

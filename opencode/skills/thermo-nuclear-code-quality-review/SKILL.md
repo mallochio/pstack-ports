@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Run an extremely
   growth. Use for a thermo-nuclear code quality review, thermonuclear review, deep
   code quality audit, or especially harsh maintainability review.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

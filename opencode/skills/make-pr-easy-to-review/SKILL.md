@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Prepare PRs for 
   without changing code behavior. Use for "make this easy to review", "tidy this PR",
   "clean up commits", or "annotate the diff".
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

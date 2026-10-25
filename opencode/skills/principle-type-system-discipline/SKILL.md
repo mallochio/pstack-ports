@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Apply when desig
   Make illegal states unrepresentable, brand semantic primitives, parse external data
   at boundaries, exhaust variants, derive from authoritative schemas.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

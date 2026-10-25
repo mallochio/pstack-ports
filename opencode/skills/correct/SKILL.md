@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Find the mistake
   docs last. Prove each check fails on a real past mistake. Repeat this each time
   the operator corrects you. Use for the `correct` skill.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Catch the user u
   like the `ketchup` skill, with a short silent video of slides for what happened
   and the waiting calls as text under it. Use for the `ketchup-video` skill.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

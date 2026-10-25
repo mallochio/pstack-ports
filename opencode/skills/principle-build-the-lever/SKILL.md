@@ -5,7 +5,7 @@ description: 'Only use when poteto-mode is active for this task. Apply to any no
   does it or proves it (codemod, script, generator, or a skill your subagents follow)
   instead of working by hand. The tool is the artifact a reviewer can rerun.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

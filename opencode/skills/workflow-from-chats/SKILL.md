@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Extract durable 
   docs. Use when asked to learn preferences, mine feedback, personalize workflows,
   or generate team/person-specific agent guidance.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

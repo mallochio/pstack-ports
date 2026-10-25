@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Reconstruct your
   for 'recall my work on X', 'catch me up', 'what have I been working on', 'where
   did I leave off', before starting or resuming work.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

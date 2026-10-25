@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Review the curre
   branch for bugs, intent fit, and test coverage; run or write tests; commit focused
   work; open or update a PR.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

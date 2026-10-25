@@ -3,7 +3,7 @@ name: fix-merge-conflicts
 description: Only use when poteto-mode is active for this task. Resolve merge conflicts
   non-interactively, validate build and tests, and finalize conflict resolution
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

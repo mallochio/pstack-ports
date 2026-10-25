@@ -3,7 +3,7 @@ name: sharpen
 description: Only use when poteto-mode is active for this task. Make a task deeper,
   not bigger, then rewrite the prompt. Use for the `sharpen` skill.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

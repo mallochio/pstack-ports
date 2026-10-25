@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Spawn N parallel
   Use for the `arena` skill, 'arena this', 'throw it in the arena', or when one attempt
   at a non-trivial artifact would lock in the wrong shape.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

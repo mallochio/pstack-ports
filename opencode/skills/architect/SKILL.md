@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Sketch types, si
   in. Use for the `architect` skill, 'architect this', 'design this', or non-trivial
   work where jumping to code would lock in the wrong shape.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

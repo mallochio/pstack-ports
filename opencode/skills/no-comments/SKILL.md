@@ -3,7 +3,7 @@ name: no-comments
 description: Only use when poteto-mode is active for this task. Spawn Comment Sicko,
   fix accepted findings, and offer encodings for claimed constraints.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

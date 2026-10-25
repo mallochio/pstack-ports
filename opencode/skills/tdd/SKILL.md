@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Use only when th
   bug has an obvious cheap local test target. Skip when the test path is unclear,
   expensive, integration-heavy, or not requested.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

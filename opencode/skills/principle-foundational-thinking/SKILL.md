@@ -5,7 +5,7 @@ description: 'Only use when poteto-mode is active for this task. Apply before wr
   asking what concurrent actors share. Get the data structures right so downstream
   code becomes obvious.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

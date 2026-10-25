@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when intro
   a new internal API while old callers still exist. Migrate callers and delete the
   old API in the same wave instead of preserving compatibility layers.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

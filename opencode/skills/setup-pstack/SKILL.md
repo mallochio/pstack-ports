@@ -4,6 +4,8 @@ description: Configure which models pstack uses per role and at what reasoning b
   Detects your available models and writes an always-applied rule that overrides the
   skill defaults. Use for `/setup-pstack`, "configure pstack models", "pstack budget",
   or changing pstack's model choices.
+metadata:
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

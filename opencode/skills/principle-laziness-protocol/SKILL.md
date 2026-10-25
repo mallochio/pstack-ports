@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when refac
   evaluating diff size, or tempted to add abstractions, layers, or signal threading.
   Bias toward deletion and the smallest change that solves the problem.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

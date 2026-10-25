@@ -6,7 +6,7 @@ description: "Only use when poteto-mode is active for this task. Generate a proj
   \ a control skill for this repo\", or when a project has no scripted way to prove\
   \ UI/CLI/service behavior."
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

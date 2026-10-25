@@ -4,7 +4,7 @@ description: 'Only use when poteto-mode is active for this task. Apply when cont
   is filling up: large outputs, long files, repeated reads, fan-out planning. Route
   bulk to subagents; keep summaries in the main thread, not raw payloads.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

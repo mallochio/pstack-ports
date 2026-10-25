@@ -3,7 +3,7 @@ name: principle-redesign-from-first-principles
 description: Only use when poteto-mode is active for this task. Apply when integrating
   a new requirement into an existing design.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

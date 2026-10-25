@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Find what a chan
   it's safe because of by running real code instead of writing it up. Use for 'blast
   radius of X', 'what could this break', or reviewing a small diff you don't trust.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

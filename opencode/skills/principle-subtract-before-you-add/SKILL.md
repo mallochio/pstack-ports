@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when seque
   an addition, refactor, or rewrite. Remove dead code, redundant validators, and stub
   references first, then build on the simpler base.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

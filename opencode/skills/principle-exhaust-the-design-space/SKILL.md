@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when facin
   a novel UI interaction or architectural decision with no precedent in the codebase.
   Build 2-3 competing prototypes and compare side by side before committing.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

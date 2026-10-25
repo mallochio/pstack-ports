@@ -3,7 +3,7 @@ name: new-branch-and-pr
 description: Only use when poteto-mode is active for this task. Create a fresh branch,
   complete work, and open a pull request
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

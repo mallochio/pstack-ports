@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Generate a proje
   skill, "model-check this race", "prove this invariant", or when concurrency, retries,
   state machines, parsers, or unsafe code need more than tests.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

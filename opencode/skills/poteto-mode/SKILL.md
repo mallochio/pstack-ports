@@ -6,7 +6,7 @@ description: poteto's agent style for concise, detailed responses, deliberate su
 metadata:
   icon: crown
   color: yellow
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---
@@ -175,5 +175,5 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - Where text references a periodic wake (`/loop` upstream), use a background task or watcher that re-arms; `scripts/watch-pr` covers GitHub PR wakes.
 - `deslop`, `control-cli`, and `control-ui` ship with this port.
 - The verification-skill convention (`.opencode/skills/verify-<app>/`) works as-is: project-local skills are discovered automatically.
-- Gating: every skill except `/poteto-mode`, `/setup-pstack`, and `/poteto-help` carries `disable_model_invocation` and a description gate — the harness must not trigger pstack skills on its own. They load only when the task runs under `/poteto-mode`, which routes to them explicitly per playbook.
+- Gating: every skill carries `metadata.opencode/autoinvoke: false` and a description gate — opencode keeps them out of every agent's available-skills list, so they cost no context in a normal session. They load by explicit ID only: `/poteto-mode` (the command or the `poteto` agent) loads `poteto-mode`, which routes to the rest per playbook. `@<skill-id>` loads any of them directly.
 

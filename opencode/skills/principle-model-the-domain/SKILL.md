@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when writi
   stateful logic, or when code branches a lot or repeats a shape assumption across
   files.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

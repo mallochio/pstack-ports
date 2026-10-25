@@ -862,15 +862,17 @@ def skill_frontmatter(fm: dict, dirname: str, target: str) -> dict:
             out["disable-model-invocation"] = True
     else:
         meta = {}
-        for k in ("mode", "icon", "color", "reminder", "disable-model-invocation"):
+        for k in ("mode", "icon", "color", "reminder"):
             if k in fm:
                 meta[k.replace("-", "_")] = (
                     str(fm[k]).lower() if isinstance(fm[k], bool) else str(fm[k])
                 )
-        if gated:
-            meta["disable_model_invocation"] = "true"
-        if meta:
-            out["metadata"] = meta
+        # opencode hides autoinvoke:false skills from every agent's
+        # available-skills list, so they cost no context until loaded by
+        # explicit ID. That is how poteto-mode routes to them, and how the
+        # poteto agent and the /poteto-mode command load the entry skills.
+        meta["opencode/autoinvoke"] = False
+        out["metadata"] = meta
         out["license"] = "MIT"
         out["compatibility"] = "opencode"
     return out
@@ -1010,7 +1012,7 @@ HARNESS_NOTE = {
         "- Where text references a periodic wake (`/loop` upstream), use a background task or watcher that re-arms; `scripts/watch-pr` covers GitHub PR wakes.\n"
         "- `deslop`, `control-cli`, and `control-ui` ship with this port.\n"
         "- The verification-skill convention (`.opencode/skills/verify-<app>/`) works as-is: project-local skills are discovered automatically.\n"
-        "- Gating: every skill except `/poteto-mode`, `/setup-pstack`, and `/poteto-help` carries `disable_model_invocation` and a description gate — the harness must not trigger pstack skills on its own. They load only when the task runs under `/poteto-mode`, which routes to them explicitly per playbook.\n"
+        "- Gating: every skill carries `metadata.opencode/autoinvoke: false` and a description gate — opencode keeps them out of every agent's available-skills list, so they cost no context in a normal session. They load by explicit ID only: `/poteto-mode` (the command or the `poteto` agent) loads `poteto-mode`, which routes to the rest per playbook. `@<skill-id>` loads any of them directly.\n"
     ),
     "prime-agent": (
         "## Harness notes (prime-agent port)\n\n"
@@ -1921,7 +1923,7 @@ port applies.
 
 | Cursor | opencode | prime-agent |
 |---|---|---|
-| Skill frontmatter `name`/`description` + extras (`icon`, `color`, `reminder`, `disable-model-invocation`, `is_background`, `mode`) | `name`, `description`, `license`, `compatibility`; extras moved to `metadata:` | `name`, `description`; `disable-model-invocation` preserved verbatim (hides from `<available_skills>`, still `/skill:name`-invocable) |
+| Skill frontmatter `name`/`description` + extras (`icon`, `color`, `reminder`, `disable-model-invocation`, `is_background`, `mode`) | `name`, `description`, `license`, `compatibility`; extras moved to `metadata:`; every skill also sets `metadata.opencode/autoinvoke: false` so opencode keeps it out of the available-skills list (still loadable by ID) | `name`, `description`; `disable-model-invocation` preserved verbatim (hides from `<available_skills>`, still `/skill:name`-invocable) |
 | `/skillname` slash mention in prose | `the \\`name\\` skill` (except `/poteto-mode`, `/setup-pstack` — shipped as real commands) | `` `/skill:name` `` |
 | `mode: true` on poteto-mode (agent mode) | `agents/poteto.md` with `mode: primary` | not applicable — load the skill; `/poteto` prompt provided |
 | `~/.cursor/rules/pstack-models.mdc` always-applied rule | `~/.config/opencode/pstack-models.md` + `instructions` entry in `opencode.json` | `~/.prime/agent/pstack-models.md` + pointer block in `AGENTS.md` (delete the block to disable) |

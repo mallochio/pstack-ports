@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Apply when you c
   Encode the rule as a lint, metadata flag, runtime check, or script instead of more
   text.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

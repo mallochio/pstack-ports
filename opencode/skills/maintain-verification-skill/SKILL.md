@@ -5,7 +5,7 @@ description: 'Only use when poteto-mode is active for this task. Periodic pass t
   per feature, one live session driving every feature, at most one PR of proven corrections.
   Use for the `maintain-verification-skill` skill or "audit the verify skill".'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

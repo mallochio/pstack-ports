@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Monitor PR check
   and fix failures until green. Uses gh pr checks as the source of truth for PR-attached
   checks.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

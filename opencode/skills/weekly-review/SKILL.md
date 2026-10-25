@@ -3,7 +3,7 @@ name: weekly-review
 description: Only use when poteto-mode is active for this task. Produce a weekly synthesis
   of authored commits with highlights by bugfix, tech debt, and net-new work
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

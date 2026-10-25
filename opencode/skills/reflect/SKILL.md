@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Spawn three para
   review subagents over the active transcript, surface learnings, and route each to
   a concrete edit on an existing skill. Use when the user says reflect.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

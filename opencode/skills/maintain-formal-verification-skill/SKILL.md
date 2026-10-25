@@ -8,7 +8,7 @@ description: 'Only use when poteto-mode is active for this task. Bring a project
   skill, "is the model still true to the code", or after merges and refactors that
   touched verified code without rechecking it.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

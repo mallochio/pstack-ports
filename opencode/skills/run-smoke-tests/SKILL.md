@@ -3,7 +3,7 @@ name: run-smoke-tests
 description: Only use when poteto-mode is active for this task. Run Playwright smoke
   tests, debug failures, and verify fixes
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

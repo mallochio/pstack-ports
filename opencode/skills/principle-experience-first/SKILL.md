@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when produ
   UX, or feature-scope tradeoffs come up. Choose user delight over implementation
   convenience; ship fewer polished features over more rough ones.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

@@ -6,7 +6,7 @@ description: Only use when poteto-mode is active for this task. Draw how any sys
   state that breaks a rule. Use for the `statechart` skill, to show a bug as a path
   through states, or to turn an agreed chart into a TLA+ skeleton.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Build or adapt a
   UI verification, screenshots, accessibility snapshots, perf profiles, visual diffs,
   or reproducing UI bugs.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

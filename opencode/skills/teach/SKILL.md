@@ -5,7 +5,7 @@ description: Only use when poteto-mode is active for this task. Explain a body o
   and weaves what they find into one clear explanation. Use for 'teach me this', 'help
   me really understand X', 'explain this change or subsystem to me'.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

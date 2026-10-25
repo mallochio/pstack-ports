@@ -5,7 +5,7 @@ description: 'Only use when poteto-mode is active for this task. Apply before yo
   a latency, or an eval result. Find what limits it, and rule out that it measured
   something other than the work you think.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

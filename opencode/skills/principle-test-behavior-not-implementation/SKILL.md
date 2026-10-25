@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when you w
   change, or keep a test. Assert what the code's users can observe, so that the test
   fails when that behavior breaks and keeps passing when only the internals change.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

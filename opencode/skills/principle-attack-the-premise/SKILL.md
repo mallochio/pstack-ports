@@ -4,7 +4,7 @@ description: Only use when poteto-mode is active for this task. Apply when two o
   more fixes that share one premise have failed the same gate. Write the premise down
   and test it directly before you write another fix that assumes it.
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

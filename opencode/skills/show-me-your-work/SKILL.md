@@ -6,7 +6,7 @@ description: 'Only use when poteto-mode is active for this task. Keep a reviewab
   the trail to trust the result. Use for the `show-me-your-work` skill, autonomous
   or multi-phase runs, or work a human reviews after stepping away.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---

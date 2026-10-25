@@ -5,7 +5,7 @@ description: 'Only use when poteto-mode is active for this task. Design an audit
   or work a human reviews after stepping away. Scales rigor to the task, runs a hypothesis
   loop, and logs decisions. Use for the `figure-it-out` skill or ''figure it out''.'
 metadata:
-  disable_model_invocation: 'true'
+  opencode/autoinvoke: false
 license: MIT
 compatibility: opencode
 ---
